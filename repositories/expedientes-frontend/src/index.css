@@ -66,11 +66,11 @@ body {
 
 .app-version {
   margin-left: 0.35rem;
-  font-size: 0.52em;
-  font-weight: 500;
+  font-size: 0.42em;
+  font-weight: 400;
   letter-spacing: 0.02em;
-  color: #8a94a6;
-  opacity: 0.85;
+  color: #9aa3b2;
+  opacity: 0.62;
 }
 
 .main-nav {

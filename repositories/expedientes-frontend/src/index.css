@@ -305,12 +305,24 @@ button:not(.btn):disabled {
 
 .tab-strip .nav-link {
   font-weight: 700;
+  color: var(--ink-soft);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 10px 10px 0 0;
+  margin-right: 0.35rem;
 }
 
 .tab-strip .nav-link.active {
-  color: var(--accent-strong);
-  border-color: rgba(29, 78, 216, 0.25) rgba(29, 78, 216, 0.25) #fff;
-  background: rgba(29, 78, 216, 0.06);
+  color: #fff;
+  border-color: var(--accent-strong);
+  background: linear-gradient(120deg, var(--accent), var(--accent-strong));
+  box-shadow: 0 8px 18px rgba(29, 78, 216, 0.18);
+}
+
+.tab-strip .nav-link:not(.active):hover {
+  color: var(--ink);
+  border-color: #b7c6e2;
+  background: #f8fbff;
 }
 
 .search-grid {

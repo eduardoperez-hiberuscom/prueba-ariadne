@@ -95,7 +95,7 @@ function App() {
         setAuth(nextAuth)
         saveAuth(nextAuth)
         setSession(true)
-        setAuthNotice('Sesion iniciada. Bienvenido al panel principal.')
+        setAuthNotice('')
       })
       .catch(() => {
         setAuthError('No se pudo iniciar sesion. Revisa usuario/clave.')

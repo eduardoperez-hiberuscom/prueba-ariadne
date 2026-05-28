@@ -280,6 +280,17 @@ export function DashboardPage({ auth }: DashboardPageProps) {
           </button>
         </div>
 
+        <div className="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-2 mb-3">
+          <p className="text-secondary mb-0">Acciones rapidas de la bandeja</p>
+          <Link
+            className="btn btn-primary d-inline-flex align-items-center gap-2 px-3 py-2"
+            to="/expedientes/nuevo"
+          >
+            <i className="bi bi-plus-lg"></i>
+            Nuevo expediente
+          </Link>
+        </div>
+
         <form className="search-grid row g-2 align-items-end" onSubmit={onSearch}>
           <div className="col-12 col-lg-3">
           <input
@@ -349,10 +360,6 @@ export function DashboardPage({ auth }: DashboardPageProps) {
 
         <div className="list-header">
           <h2>Se han encontrado {filteredData.length} expedientes</h2>
-          <Link className="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1" to="/expedientes/nuevo">
-            <i className="bi bi-plus-lg"></i>
-            Nuevo expediente
-          </Link>
         </div>
 
         {isLoading ? <div className="alert alert-info py-2">Cargando datos...</div> : null}

@@ -222,7 +222,10 @@ export function DashboardPage({ auth }: DashboardPageProps) {
       <article className="panel hero-panel card border-0 shadow-sm p-3">
         <p className="overline">Expedientes</p>
         <h1>{tabTitle}</h1>
-        <p className="text-secondary mb-0">{tabDescription}</p>
+        <p className="text-secondary mb-0 d-flex align-items-center gap-2">
+          <i className="bi bi-stars"></i>
+          {tabDescription}
+        </p>
       </article>
 
       <article className="row g-3">
@@ -258,6 +261,7 @@ export function DashboardPage({ auth }: DashboardPageProps) {
             className={activeTab === 'assigned' ? 'nav-link active' : 'nav-link'}
             onClick={() => setActiveTab('assigned')}
           >
+            <i className="bi bi-briefcase me-2"></i>
             Mis Expedientes
           </button>
           <button
@@ -267,6 +271,7 @@ export function DashboardPage({ auth }: DashboardPageProps) {
             className={activeTab === 'search' ? 'nav-link active' : 'nav-link'}
             onClick={() => setActiveTab('search')}
           >
+            <i className="bi bi-search me-2"></i>
             Busqueda de Expedientes
           </button>
           <button
@@ -276,14 +281,18 @@ export function DashboardPage({ auth }: DashboardPageProps) {
             className={activeTab === 'unassigned' ? 'nav-link active' : 'nav-link'}
             onClick={() => setActiveTab('unassigned')}
           >
+            <i className="bi bi-inbox me-2"></i>
             Sin asignar
           </button>
         </div>
 
         <div className="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-2 mb-3">
-          <p className="text-secondary mb-0">Acciones rapidas de la bandeja</p>
+          <p className="text-secondary mb-0 d-flex align-items-center gap-2">
+            <i className="bi bi-lightning-charge"></i>
+            Acciones rapidas de la bandeja
+          </p>
           <Link
-            className="btn btn-primary d-inline-flex align-items-center gap-2 px-3 py-2"
+            className="btn btn-aepd-orange d-inline-flex align-items-center gap-2 px-3 py-2"
             to="/expedientes/nuevo"
           >
             <i className="bi bi-plus-lg"></i>
@@ -293,68 +302,92 @@ export function DashboardPage({ auth }: DashboardPageProps) {
 
         <form className="search-grid row g-2 align-items-end" onSubmit={onSearch}>
           <div className="col-12 col-lg-3">
-          <input
-            className="form-control"
-            value={draftFilters.query}
-            onChange={(event) =>
-              setDraftFilters((prev) => ({ ...prev, query: event.target.value }))
-            }
-            placeholder="Buscar por NIF, N de Expediente..."
-          />
+            <div className="input-group">
+              <span className="input-group-text bg-white">
+                <i className="bi bi-search"></i>
+              </span>
+              <input
+                className="form-control"
+                value={draftFilters.query}
+                onChange={(event) =>
+                  setDraftFilters((prev) => ({ ...prev, query: event.target.value }))
+                }
+                placeholder="Buscar por NIF, N de Expediente..."
+              />
+            </div>
           </div>
 
           <div className="col-12 col-lg-2">
-          <input
-            className="form-control"
-            type="date"
-            value={draftFilters.fecha}
-            onChange={(event) =>
-              setDraftFilters((prev) => ({ ...prev, fecha: event.target.value }))
-            }
-          />
+            <div className="input-group">
+              <span className="input-group-text bg-white">
+                <i className="bi bi-calendar-event"></i>
+              </span>
+              <input
+                className="form-control"
+                type="date"
+                value={draftFilters.fecha}
+                onChange={(event) =>
+                  setDraftFilters((prev) => ({ ...prev, fecha: event.target.value }))
+                }
+              />
+            </div>
           </div>
 
           <div className="col-12 col-lg-2">
-          <select
-            className="form-select"
-            value={draftFilters.fase}
-            onChange={(event) =>
-              setDraftFilters((prev) => ({ ...prev, fase: event.target.value }))
-            }
-          >
-            <option value="">Seleccionar fase</option>
-            {faseOptions.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
+            <div className="input-group">
+              <span className="input-group-text bg-white">
+                <i className="bi bi-diagram-3"></i>
+              </span>
+              <select
+                className="form-select"
+                value={draftFilters.fase}
+                onChange={(event) =>
+                  setDraftFilters((prev) => ({ ...prev, fase: event.target.value }))
+                }
+              >
+                <option value="">Seleccionar fase</option>
+                {faseOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div className="col-12 col-lg-2">
-          <select
-            className="form-select"
-            value={draftFilters.estado}
-            onChange={(event) =>
-              setDraftFilters((prev) => ({ ...prev, estado: event.target.value }))
-            }
-          >
-            <option value="">Seleccionar estado</option>
-            {estadoOptions.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
+            <div className="input-group">
+              <span className="input-group-text bg-white">
+                <i className="bi bi-flag"></i>
+              </span>
+              <select
+                className="form-select"
+                value={draftFilters.estado}
+                onChange={(event) =>
+                  setDraftFilters((prev) => ({ ...prev, estado: event.target.value }))
+                }
+              >
+                <option value="">Seleccionar estado</option>
+                {estadoOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div className="col-6 col-lg-1 d-grid">
-          <button type="submit" className="btn btn-primary">Buscar</button>
+            <button type="submit" className="btn btn-primary d-inline-flex align-items-center justify-content-center gap-1">
+              <i className="bi bi-search"></i>
+              Buscar
+            </button>
           </div>
           <div className="col-6 col-lg-1 d-grid">
-          <button type="button" className="btn btn-outline-secondary" onClick={onClearFilters}>
-            Limpiar
-          </button>
+            <button type="button" className="btn btn-outline-secondary d-inline-flex align-items-center justify-content-center gap-1" onClick={onClearFilters}>
+              <i className="bi bi-arrow-counterclockwise"></i>
+              Limpiar
+            </button>
           </div>
         </form>
 
@@ -443,6 +476,7 @@ export function DashboardPage({ auth }: DashboardPageProps) {
                   : unassignedPageData?.first,
             )}
           >
+            <i className="bi bi-chevron-left me-1"></i>
             Anterior
           </button>
           <span>
@@ -474,6 +508,7 @@ export function DashboardPage({ auth }: DashboardPageProps) {
             )}
           >
             Siguiente
+            <i className="bi bi-chevron-right ms-1"></i>
           </button>
         </div>
       </article>

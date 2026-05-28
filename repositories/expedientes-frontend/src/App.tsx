@@ -129,9 +129,11 @@ function App() {
             {isAuthenticated ? (
               <>
                 <NavLink to="/" end className="nav-link">
+                  <i className="bi bi-grid me-1"></i>
                   Panel
                 </NavLink>
                 <NavLink to="/expedientes/nuevo" className="nav-link">
+                  <i className="bi bi-plus-circle me-1"></i>
                   Nuevo expediente
                 </NavLink>
               </>
@@ -144,8 +146,12 @@ function App() {
 
           {isAuthenticated ? (
             <div className="topbar-auth">
-              <p className="user-chip">Sesion activa: {auth?.username}</p>
+              <p className="user-chip">
+                <i className="bi bi-person-circle me-1"></i>
+                Sesion activa: {auth?.username}
+              </p>
               <button type="button" className="btn btn-outline-secondary btn-sm" onClick={onLogout}>
+                <i className="bi bi-box-arrow-right me-1"></i>
                 Cerrar sesion
               </button>
             </div>

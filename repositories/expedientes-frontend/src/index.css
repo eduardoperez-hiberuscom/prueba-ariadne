@@ -7,6 +7,8 @@
   --ink-soft: #4b5563;
   --accent: #1d4ed8;
   --accent-strong: #1e40af;
+  --accent-orange: #f28a18;
+  --accent-orange-strong: #d87100;
   --line: #dbe4f1;
   --panel: rgba(255, 255, 255, 0.94);
   --danger: #be3a2a;
@@ -371,6 +373,25 @@ button:not(.btn):disabled {
 .btn-primary:focus {
   background: linear-gradient(120deg, #1e40af, #1e3a8a);
   border-color: #1e3a8a;
+}
+
+.btn-aepd-orange {
+  color: #fff;
+  border-color: var(--accent-orange-strong);
+  background: linear-gradient(120deg, var(--accent-orange), var(--accent-orange-strong));
+  box-shadow: 0 8px 18px rgba(216, 113, 0, 0.25);
+}
+
+.btn-aepd-orange:hover,
+.btn-aepd-orange:focus {
+  color: #fff;
+  border-color: #b96300;
+  background: linear-gradient(120deg, #e97c00, #c76900);
+}
+
+.input-group-text {
+  border-color: var(--line);
+  color: #6b7280;
 }
 
 .badge.text-bg-light {

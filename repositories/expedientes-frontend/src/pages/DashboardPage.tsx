@@ -222,25 +222,25 @@ export function DashboardPage({ auth }: DashboardPageProps) {
       <article className="panel hero-panel card border-0 shadow-sm p-3">
         <p className="overline">Expedientes</p>
         <h1>{tabTitle}</h1>
-        <p>{tabDescription}</p>
+        <p className="text-secondary mb-0">{tabDescription}</p>
       </article>
 
       <article className="row g-3">
         <div className="col-12 col-md-4">
-          <div className="panel kpi-card card border-0 shadow-sm p-3 h-100">
-          <h2>Mis asignados</h2>
+          <div className="panel kpi-card card border-0 shadow-sm p-3 h-100 premium-kpi">
+          <h2 className="d-flex align-items-center gap-2"><i className="bi bi-person-check"></i>Mis asignados</h2>
           <p className="kpi-value">{assignedPageData?.totalElements ?? 0}</p>
         </div>
         </div>
         <div className="col-12 col-md-4">
-          <div className="panel kpi-card card border-0 shadow-sm p-3 h-100">
-          <h2>Sin asignar</h2>
+          <div className="panel kpi-card card border-0 shadow-sm p-3 h-100 premium-kpi">
+          <h2 className="d-flex align-items-center gap-2"><i className="bi bi-inbox"></i>Sin asignar</h2>
           <p className="kpi-value">{unassignedPageData?.totalElements ?? 0}</p>
         </div>
         </div>
         <div className="col-12 col-md-4">
-          <div className="panel kpi-card card border-0 shadow-sm p-3 h-100">
-          <h2>Total visibles</h2>
+          <div className="panel kpi-card card border-0 shadow-sm p-3 h-100 premium-kpi">
+          <h2 className="d-flex align-items-center gap-2"><i className="bi bi-grid-3x3-gap"></i>Total visibles</h2>
           <p className="kpi-value">
             {(assignedPageData?.content?.length ?? 0) +
               (unassignedPageData?.content?.length ?? 0)}
@@ -349,7 +349,8 @@ export function DashboardPage({ auth }: DashboardPageProps) {
 
         <div className="list-header">
           <h2>Se han encontrado {filteredData.length} expedientes</h2>
-          <Link className="btn btn-outline-primary btn-sm" to="/expedientes/nuevo">
+          <Link className="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1" to="/expedientes/nuevo">
+            <i className="bi bi-plus-lg"></i>
             Nuevo expediente
           </Link>
         </div>
@@ -381,11 +382,14 @@ export function DashboardPage({ auth }: DashboardPageProps) {
                   <td>{formatDate(expediente.fechaCreacion)}</td>
                   <td>{expediente.procedimiento || '-'}</td>
                   <td>{expediente.asignadoAId ? auth.username : 'Sin asignar'}</td>
-                  <td>{expediente.estado}</td>
+                  <td>
+                    <span className="badge text-bg-light border">{expediente.estado}</span>
+                  </td>
                   <td>
                     <div className="table-actions">
                       {renderActionButtons(expediente)}
-                      <Link className="btn btn-outline-primary btn-sm" to={`/expedientes/${expediente.id}`}>
+                      <Link className="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1" to={`/expedientes/${expediente.id}`}>
+                        <i className="bi bi-eye"></i>
                         Ver
                       </Link>
                     </div>

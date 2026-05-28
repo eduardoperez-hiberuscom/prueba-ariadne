@@ -73,20 +73,20 @@ export function ExpedienteDetailPage({ auth }: ExpedienteDetailPageProps) {
   }
 
   return (
-    <section className="page-grid">
-      <article className="panel detail-panel">
+    <section className="page-grid d-grid gap-3">
+      <article className="panel detail-panel card border-0 shadow-sm p-3">
         <div className="list-header">
           <p className="overline">Detalle de expediente</p>
-          <Link className="ghost-link" to="/">
+          <Link className="btn btn-outline-secondary btn-sm" to="/">
             Volver al panel
           </Link>
         </div>
 
-        {loading ? <p>Cargando expediente...</p> : null}
+        {loading ? <div className="alert alert-info py-2">Cargando expediente...</div> : null}
         {!hasValidId ? (
-          <p className="error-text">Identificador de expediente invalido.</p>
+          <div className="alert alert-danger py-2">Identificador de expediente invalido.</div>
         ) : null}
-        {error ? <p className="error-text">{error}</p> : null}
+        {error ? <div className="alert alert-danger py-2">{error}</div> : null}
 
         {expediente ? (
           <>
@@ -99,7 +99,7 @@ export function ExpedienteDetailPage({ auth }: ExpedienteDetailPageProps) {
               </div>
               <div>
                 <h3>Estado</h3>
-                <p>{expediente.estado}</p>
+                <p><span className="badge text-bg-light border">{expediente.estado}</span></p>
               </div>
               <div>
                 <h3>Tipo</h3>
@@ -122,12 +122,13 @@ export function ExpedienteDetailPage({ auth }: ExpedienteDetailPageProps) {
         ) : null}
       </article>
 
-      <article className="panel">
+      <article className="panel card border-0 shadow-sm p-3">
         <h2>Generacion de documento (RF-3)</h2>
         <form className="stack-form" onSubmit={onGenerateDocument}>
           <label>
             Tipo de documento
             <input
+              className="form-control"
               value={tipoDoc}
               onChange={(event) => setTipoDoc(event.target.value)}
               placeholder="Requerimiento"
@@ -137,12 +138,13 @@ export function ExpedienteDetailPage({ auth }: ExpedienteDetailPageProps) {
           <label>
             Variable {'{{contenido}}'}
             <textarea
+              className="form-control"
               value={contenido}
               onChange={(event) => setContenido(event.target.value)}
             />
           </label>
 
-          <button type="submit" disabled={processingDoc || !expediente}>
+          <button className="btn btn-primary" type="submit" disabled={processingDoc || !expediente}>
             {processingDoc ? 'Generando...' : 'Generar documento'}
           </button>
         </form>

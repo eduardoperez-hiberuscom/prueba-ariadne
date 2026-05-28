@@ -67,21 +67,22 @@ export function NewExpedientePage({ auth }: NewExpedientePageProps) {
   }
 
   return (
-    <section className="page-grid">
-      <article className="panel hero-panel">
+    <section className="page-grid d-grid gap-3">
+      <article className="panel hero-panel card border-0 shadow-sm p-3">
         <p className="overline">Alta de expediente</p>
         <h1>Registrar nuevo caso administrativo</h1>
-        <p>
+        <p className="text-secondary mb-0">
           Esta operacion dispara la numeracion oficial y deja trazabilidad en la
           auditoria del sistema.
         </p>
       </article>
 
-      <article className="panel">
+      <article className="panel card border-0 shadow-sm p-3">
         <form className="stack-form" onSubmit={onSubmit}>
           <label>
             Asunto
             <input
+              className="form-control"
               value={form.asunto}
               onChange={(event) =>
                 setForm((prev) => ({ ...prev, asunto: event.target.value }))
@@ -93,6 +94,7 @@ export function NewExpedientePage({ auth }: NewExpedientePageProps) {
           <label>
             Tipo
             <input
+              className="form-control"
               value={form.tipo}
               onChange={(event) =>
                 setForm((prev) => ({ ...prev, tipo: event.target.value }))
@@ -104,6 +106,7 @@ export function NewExpedientePage({ auth }: NewExpedientePageProps) {
           <label>
             Procedimiento
             <input
+              className="form-control"
               value={form.procedimiento}
               onChange={(event) =>
                 setForm((prev) => ({ ...prev, procedimiento: event.target.value }))
@@ -115,6 +118,7 @@ export function NewExpedientePage({ auth }: NewExpedientePageProps) {
           <label>
             Descripcion
             <textarea
+              className="form-control"
               value={form.descripcion}
               onChange={(event) =>
                 setForm((prev) => ({ ...prev, descripcion: event.target.value }))
@@ -124,17 +128,17 @@ export function NewExpedientePage({ auth }: NewExpedientePageProps) {
           </label>
 
           <div className="actions-row">
-            <button type="submit" disabled={submitting}>
+            <button className="btn btn-primary" type="submit" disabled={submitting}>
               {submitting ? 'Creando...' : 'Crear expediente'}
             </button>
-            <Link className="ghost-link" to="/">
+            <Link className="btn btn-outline-secondary" to="/">
               Volver al panel
             </Link>
           </div>
         </form>
 
-        {message ? <p className="result-ok">{message}</p> : null}
-        {error ? <p className="error-text">{error}</p> : null}
+        {message ? <div className="alert alert-success py-2 mt-3 mb-0">{message}</div> : null}
+        {error ? <div className="alert alert-danger py-2 mt-3 mb-0">{error}</div> : null}
       </article>
     </section>
   )

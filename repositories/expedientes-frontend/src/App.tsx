@@ -122,7 +122,7 @@ function App() {
           <div className="brand-block">
             <p className="overline">Ariadne</p>
             <Link to="/" className="brand-link">
-              Tramitador Corporativo <span className="text-secondary">v{APP_VERSION}</span>
+              Tramitador Corporativo <span className="app-version">v{APP_VERSION}</span>
             </Link>
           </div>
 

@@ -64,6 +64,15 @@ body {
   color: var(--ink);
 }
 
+.app-version {
+  margin-left: 0.35rem;
+  font-size: 0.52em;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: #8a94a6;
+  opacity: 0.85;
+}
+
 .main-nav {
   display: flex;
   gap: 0.4rem;

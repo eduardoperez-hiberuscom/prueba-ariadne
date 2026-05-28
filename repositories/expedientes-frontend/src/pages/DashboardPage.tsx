@@ -228,22 +228,22 @@ export function DashboardPage({ auth }: DashboardPageProps) {
         </p>
       </article>
 
-      <article className="row g-3">
+      <article className="row g-2">
         <div className="col-12 col-md-4">
-          <div className="panel kpi-card card border-0 shadow-sm p-3 h-100 premium-kpi">
-          <h2 className="d-flex align-items-center gap-2"><i className="bi bi-person-check"></i>Mis asignados</h2>
+          <div className="panel kpi-card card border-0 shadow-sm p-2 h-100 premium-kpi">
+          <h2 className="d-flex align-items-center gap-2 mb-1"><i className="bi bi-person-check"></i>Mis asignados</h2>
           <p className="kpi-value">{assignedPageData?.totalElements ?? 0}</p>
         </div>
         </div>
         <div className="col-12 col-md-4">
-          <div className="panel kpi-card card border-0 shadow-sm p-3 h-100 premium-kpi">
-          <h2 className="d-flex align-items-center gap-2"><i className="bi bi-inbox"></i>Sin asignar</h2>
+          <div className="panel kpi-card card border-0 shadow-sm p-2 h-100 premium-kpi">
+          <h2 className="d-flex align-items-center gap-2 mb-1"><i className="bi bi-inbox"></i>Sin asignar</h2>
           <p className="kpi-value">{unassignedPageData?.totalElements ?? 0}</p>
         </div>
         </div>
         <div className="col-12 col-md-4">
-          <div className="panel kpi-card card border-0 shadow-sm p-3 h-100 premium-kpi">
-          <h2 className="d-flex align-items-center gap-2"><i className="bi bi-grid-3x3-gap"></i>Total visibles</h2>
+          <div className="panel kpi-card card border-0 shadow-sm p-2 h-100 premium-kpi">
+          <h2 className="d-flex align-items-center gap-2 mb-1"><i className="bi bi-grid-3x3-gap"></i>Total visibles</h2>
           <p className="kpi-value">
             {(assignedPageData?.content?.length ?? 0) +
               (unassignedPageData?.content?.length ?? 0)}

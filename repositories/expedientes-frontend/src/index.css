@@ -179,15 +179,20 @@ p {
 }
 
 .kpi-card {
-  min-height: 130px;
+  min-height: 96px;
 }
 
 .kpi-value {
-  margin-top: 0.65rem;
+  margin-top: 0.15rem;
   font-family: var(--display);
-  font-size: clamp(1.7rem, 4vw, 2.8rem);
+  font-size: clamp(1.4rem, 2.6vw, 2.2rem);
+  line-height: 1.05;
   color: var(--ink);
   letter-spacing: -0.03em;
+}
+
+.kpi-card h2 {
+  font-size: clamp(1rem, 1.4vw, 1.35rem);
 }
 
 .premium-kpi {

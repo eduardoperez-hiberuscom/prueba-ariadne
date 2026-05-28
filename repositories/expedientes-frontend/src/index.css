@@ -71,6 +71,24 @@ body {
   flex-wrap: wrap;
 }
 
+.topbar-auth {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.user-chip {
+  margin: 0;
+  border: 1px solid rgba(14, 143, 123, 0.28);
+  border-radius: 999px;
+  padding: 0.3rem 0.7rem;
+  background: rgba(14, 143, 123, 0.1);
+  color: var(--accent-strong);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
 .main-nav a {
   text-decoration: none;
   color: var(--ink-soft);
@@ -95,6 +113,20 @@ body {
 
 .app-main {
   display: block;
+}
+
+.login-layout {
+  min-height: min(72vh, 720px);
+  display: grid;
+  align-items: center;
+}
+
+.login-card {
+  max-width: 560px;
+  width: 100%;
+  justify-self: center;
+  display: grid;
+  gap: 1rem;
 }
 
 .page-grid {
@@ -337,6 +369,17 @@ button:disabled {
 .detail-panel {
   display: grid;
   gap: 1rem;
+}
+
+@media (max-width: 840px) {
+  .topbar {
+    grid-template-columns: 1fr;
+  }
+
+  .topbar-auth {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
 }
 
 .meta-grid {

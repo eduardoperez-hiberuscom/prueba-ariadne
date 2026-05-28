@@ -219,36 +219,41 @@ export function DashboardPage({ auth }: DashboardPageProps) {
 
   return (
     <section className="page-grid d-grid gap-3">
-      <article className="panel hero-panel card border-0 shadow-sm p-3">
-        <p className="overline">Expedientes</p>
-        <h1>{tabTitle}</h1>
-        <p className="text-secondary mb-0 d-flex align-items-center gap-2">
-          <i className="bi bi-stars"></i>
-          {tabDescription}
-        </p>
-      </article>
-
-      <article className="row g-2">
-        <div className="col-12 col-md-4">
-          <div className="panel kpi-card card border-0 shadow-sm p-2 h-100 premium-kpi">
-          <h2 className="d-flex align-items-center gap-2 mb-1"><i className="bi bi-person-check"></i>Mis asignados</h2>
-          <p className="kpi-value">{assignedPageData?.totalElements ?? 0}</p>
-        </div>
-        </div>
-        <div className="col-12 col-md-4">
-          <div className="panel kpi-card card border-0 shadow-sm p-2 h-100 premium-kpi">
-          <h2 className="d-flex align-items-center gap-2 mb-1"><i className="bi bi-inbox"></i>Sin asignar</h2>
-          <p className="kpi-value">{unassignedPageData?.totalElements ?? 0}</p>
-        </div>
-        </div>
-        <div className="col-12 col-md-4">
-          <div className="panel kpi-card card border-0 shadow-sm p-2 h-100 premium-kpi">
-          <h2 className="d-flex align-items-center gap-2 mb-1"><i className="bi bi-grid-3x3-gap"></i>Total visibles</h2>
-          <p className="kpi-value">
-            {(assignedPageData?.content?.length ?? 0) +
-              (unassignedPageData?.content?.length ?? 0)}
+      <article className="panel hero-panel card border-0 shadow-sm p-3 compact-overview">
+        <div>
+          <p className="overline">Expedientes</p>
+          <h1>{tabTitle}</h1>
+          <p className="text-secondary mb-0 d-flex align-items-center gap-2">
+            <i className="bi bi-stars"></i>
+            {tabDescription}
           </p>
         </div>
+
+        <div className="kpi-inline-group">
+          <article className="kpi-inline-item premium-kpi">
+            <p className="kpi-inline-label">
+              <i className="bi bi-person-check"></i>
+              Mis asignados
+            </p>
+            <p className="kpi-inline-value">{assignedPageData?.totalElements ?? 0}</p>
+          </article>
+          <article className="kpi-inline-item premium-kpi">
+            <p className="kpi-inline-label">
+              <i className="bi bi-inbox"></i>
+              Sin asignar
+            </p>
+            <p className="kpi-inline-value">{unassignedPageData?.totalElements ?? 0}</p>
+          </article>
+          <article className="kpi-inline-item premium-kpi">
+            <p className="kpi-inline-label">
+              <i className="bi bi-grid-3x3-gap"></i>
+              Total visibles
+            </p>
+            <p className="kpi-inline-value">
+              {(assignedPageData?.content?.length ?? 0) +
+                (unassignedPageData?.content?.length ?? 0)}
+            </p>
+          </article>
         </div>
       </article>
 

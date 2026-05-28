@@ -16,6 +16,7 @@ import type { AuthCredentials } from './types/api'
 
 const AUTH_STORAGE_KEY = 'expedientes.front.auth'
 const SESSION_STORAGE_KEY = 'expedientes.front.session'
+const APP_VERSION = '3.18.0-SNAPSHOT'
 
 const emptyAuth: AuthCredentials = {
   username: '',
@@ -119,9 +120,9 @@ function App() {
       <div className="app-shell container-fluid py-3">
         <header className="topbar reveal-up card border-0 shadow-sm mb-3 p-3">
           <div className="brand-block">
-            <p className="overline">Gestor Administrativo</p>
+            <p className="overline">Ariadne</p>
             <Link to="/" className="brand-link">
-              Expedientes 360
+              Ariadne - Tramitador Corporativo <span className="text-secondary">v{APP_VERSION}</span>
             </Link>
           </div>
 

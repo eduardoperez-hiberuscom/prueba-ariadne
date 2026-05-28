@@ -1,8 +1,8 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import {
   assignExpedienteToMe,
-  getExpedienteByNumero,
+  listExpedientes,
   listMyAssignedExpedientes,
   listUnassignedExpedientes,
   unassignExpedienteFromMe,
@@ -26,16 +26,73 @@ function formatDate(dateTime: string | undefined): string {
 }
 
 export function DashboardPage({ auth }: DashboardPageProps) {
+  const [allPageData, setAllPageData] = useState<PageResult<Expediente> | null>(null)
   const [assignedPageData, setAssignedPageData] = useState<PageResult<Expediente> | null>(null)
   const [unassignedPageData, setUnassignedPageData] = useState<PageResult<Expediente> | null>(null)
+  const [allPage, setAllPage] = useState(0)
   const [assignedPage, setAssignedPage] = useState(0)
   const [unassignedPage, setUnassignedPage] = useState(0)
-  const [activeTab, setActiveTab] = useState<'assigned' | 'unassigned'>('assigned')
+  const [activeTab, setActiveTab] = useState<'assigned' | 'search' | 'unassigned'>('assigned')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [actionMessage, setActionMessage] = useState('')
-  const [searchNumero, setSearchNumero] = useState('')
-  const [searchResult, setSearchResult] = useState<Expediente | null>(null)
+  const [draftFilters, setDraftFilters] = useState({
+    query: '',
+    fecha: '',
+    fase: '',
+    estado: '',
+  })
+  const [filters, setFilters] = useState(draftFilters)
+
+  const sourceData =
+    activeTab === 'assigned'
+      ? assignedPageData?.content ?? []
+      : activeTab === 'unassigned'
+        ? unassignedPageData?.content ?? []
+        : allPageData?.content ?? []
+
+  const filteredData = useMemo(() => {
+    return sourceData.filter((expediente) => {
+      const query = filters.query.trim().toLowerCase()
+      const matchesQuery =
+        !query ||
+        expediente.asunto.toLowerCase().includes(query) ||
+          expediente.numeroExpediente.toLowerCase().includes(query) ||
+          expediente.tipo.toLowerCase().includes(query)
+
+      const dateValue = expediente.fechaCreacion?.slice(0, 10) ?? ''
+      const matchesFecha = !filters.fecha || dateValue === filters.fecha
+
+      const matchesFase =
+        !filters.fase ||
+        (expediente.procedimiento ?? '').toLowerCase() === filters.fase.toLowerCase()
+
+      const matchesEstado =
+        !filters.estado ||
+        (expediente.estado ?? '').toLowerCase() === filters.estado.toLowerCase()
+
+      return matchesQuery && matchesFecha && matchesFase && matchesEstado
+    })
+  }, [sourceData, filters])
+
+  const faseOptions = useMemo(() => {
+    return Array.from(new Set(sourceData.map((item) => item.procedimiento).filter(Boolean))).sort(
+      (a, b) => a.localeCompare(b),
+    )
+  }, [sourceData])
+
+  const estadoOptions = useMemo(() => {
+    return Array.from(new Set(sourceData.map((item) => item.estado).filter(Boolean))).sort(
+      (a, b) => a.localeCompare(b),
+    )
+  }, [sourceData])
+
+  const currentPageData =
+    activeTab === 'assigned'
+      ? assignedPageData
+      : activeTab === 'unassigned'
+        ? unassignedPageData
+        : allPageData
 
   const fetchAssigned = () =>
     listMyAssignedExpedientes(auth, assignedPage).then((result) => {
@@ -47,9 +104,14 @@ export function DashboardPage({ auth }: DashboardPageProps) {
       setUnassignedPageData(result)
     })
 
+  const fetchAll = () =>
+    listExpedientes(auth, allPage, 10).then((result) => {
+      setAllPageData(result)
+    })
+
   useEffect(() => {
     setIsLoading(true)
-    void Promise.all([fetchAssigned(), fetchUnassigned()])
+    void Promise.all([fetchAssigned(), fetchUnassigned(), fetchAll()])
       .then(() => {
         setError('')
       })
@@ -59,10 +121,10 @@ export function DashboardPage({ auth }: DashboardPageProps) {
       .finally(() => {
         setIsLoading(false)
       })
-  }, [auth, assignedPage, unassignedPage])
+  }, [auth, assignedPage, unassignedPage, allPage])
 
   const refreshBandejas = () =>
-    Promise.all([fetchAssigned(), fetchUnassigned()]).then(() => {
+    Promise.all([fetchAssigned(), fetchUnassigned(), fetchAll()]).then(() => {
       setError('')
     })
 
@@ -104,35 +166,63 @@ export function DashboardPage({ auth }: DashboardPageProps) {
 
   const onSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    setSearchResult(null)
-    setError('')
+    setFilters(draftFilters)
+  }
 
-    if (!searchNumero.trim()) {
-      return
+  const onClearFilters = () => {
+    const clean = { query: '', fecha: '', fase: '', estado: '' }
+    setDraftFilters(clean)
+    setFilters(clean)
+  }
+
+  const tabTitle =
+    activeTab === 'assigned'
+      ? 'Mis Expedientes'
+      : activeTab === 'unassigned'
+        ? 'Sin asignar'
+        : 'Busqueda de Expedientes'
+
+  const tabDescription =
+    activeTab === 'assigned'
+      ? 'Expedientes actualmente asignados a tu usuario.'
+      : activeTab === 'unassigned'
+        ? 'Expedientes pendientes de asignacion.'
+        : 'Vista general para busqueda y revision cruzada.'
+
+  const renderActionButtons = (expediente: Expediente) => {
+    if (activeTab === 'assigned') {
+      return (
+        <button type="button" onClick={() => onUnassign(expediente)}>
+          Desasignar
+        </button>
+      )
     }
 
-    setIsLoading(true)
-    void getExpedienteByNumero(auth, searchNumero.trim())
-      .then((result) => {
-        setSearchResult(result)
-      })
-      .catch(() => {
-        setError('No existe un expediente con ese numero.')
-      })
-      .finally(() => {
-        setIsLoading(false)
-      })
+    if (activeTab === 'unassigned') {
+      return (
+        <button type="button" onClick={() => onAssignToMe(expediente)}>
+          Asignarmelo
+        </button>
+      )
+    }
+
+    return expediente.asignadoAId ? (
+      <button type="button" onClick={() => onUnassign(expediente)}>
+        Desasignar
+      </button>
+    ) : (
+      <button type="button" onClick={() => onAssignToMe(expediente)}>
+        Asignarmelo
+      </button>
+    )
   }
 
   return (
     <section className="page-grid">
       <article className="panel hero-panel">
-        <p className="overline">Panel principal</p>
-        <h1>Bandeja de expedientes</h1>
-        <p>
-          Muevete entre tus expedientes asignados y los pendientes de asignacion.
-          Puedes autoasignarte o liberar asignaciones directamente desde aqui.
-        </p>
+        <p className="overline">Expedientes</p>
+        <h1>{tabTitle}</h1>
+        <p>{tabDescription}</p>
       </article>
 
       <article className="kpi-row">
@@ -154,96 +244,144 @@ export function DashboardPage({ auth }: DashboardPageProps) {
       </article>
 
       <article className="panel">
-        <h2>Busqueda rapida por numero</h2>
-        <form className="inline-form" onSubmit={onSearch}>
-          <input
-            value={searchNumero}
-            onChange={(event) => setSearchNumero(event.target.value)}
-            placeholder="Ejemplo: 20260521-12345"
-          />
-          <button type="submit">Buscar</button>
-        </form>
-
-        {searchResult ? (
-          <p className="result-ok">
-            Encontrado: <strong>{searchResult.asunto}</strong>.
-            <Link to={`/expedientes/${searchResult.id}`}> Abrir detalle</Link>
-          </p>
-        ) : null}
-      </article>
-
-      <article className="panel">
-        <div className="list-header">
-          <h2>Gestion de asignaciones</h2>
-          <Link className="ghost-link" to="/expedientes/nuevo">
-            Crear nuevo
-          </Link>
-        </div>
-
-        <div className="actions-row">
+        <div className="tab-strip" role="tablist" aria-label="Bandejas de expedientes">
           <button
             type="button"
+            role="tab"
+            aria-selected={activeTab === 'assigned'}
+            className={activeTab === 'assigned' ? 'active' : ''}
             onClick={() => setActiveTab('assigned')}
-            disabled={activeTab === 'assigned'}
           >
-            Mis asignados
+            Mis Expedientes
           </button>
           <button
             type="button"
+            role="tab"
+            aria-selected={activeTab === 'search'}
+            className={activeTab === 'search' ? 'active' : ''}
+            onClick={() => setActiveTab('search')}
+          >
+            Busqueda de Expedientes
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'unassigned'}
+            className={activeTab === 'unassigned' ? 'active' : ''}
             onClick={() => setActiveTab('unassigned')}
-            disabled={activeTab === 'unassigned'}
           >
             Sin asignar
           </button>
+        </div>
+
+        <form className="search-grid" onSubmit={onSearch}>
+          <input
+            value={draftFilters.query}
+            onChange={(event) =>
+              setDraftFilters((prev) => ({ ...prev, query: event.target.value }))
+            }
+            placeholder="Buscar por NIF, N de Expediente..."
+          />
+
+          <input
+            type="date"
+            value={draftFilters.fecha}
+            onChange={(event) =>
+              setDraftFilters((prev) => ({ ...prev, fecha: event.target.value }))
+            }
+          />
+
+          <select
+            value={draftFilters.fase}
+            onChange={(event) =>
+              setDraftFilters((prev) => ({ ...prev, fase: event.target.value }))
+            }
+          >
+            <option value="">Seleccionar fase</option>
+            {faseOptions.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={draftFilters.estado}
+            onChange={(event) =>
+              setDraftFilters((prev) => ({ ...prev, estado: event.target.value }))
+            }
+          >
+            <option value="">Seleccionar estado</option>
+            {estadoOptions.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+
+          <button type="submit">Buscar</button>
+          <button type="button" className="ghost-link" onClick={onClearFilters}>
+            Limpiar
+          </button>
+        </form>
+
+        <div className="list-header">
+          <h2>Se han encontrado {filteredData.length} expedientes</h2>
+          <Link className="ghost-link" to="/expedientes/nuevo">
+            Nuevo expediente
+          </Link>
         </div>
 
         {isLoading ? <p>Cargando datos...</p> : null}
         {error ? <p className="error-text">{error}</p> : null}
         {actionMessage ? <p className="result-ok">{actionMessage}</p> : null}
 
-        <div className="exp-list">
-          {(activeTab === 'assigned'
-            ? assignedPageData?.content ?? []
-            : unassignedPageData?.content ?? []
-          ).map((expediente) => (
-            <article key={expediente.id} className="exp-card">
-              <p className="overline">{expediente.numeroExpediente}</p>
-              <h3>
-                <Link to={`/expedientes/${expediente.id}`}>{expediente.asunto}</Link>
-              </h3>
-              <p>{expediente.descripcion || 'Sin descripcion'}</p>
-              <div className="card-meta">
-                <span className="pill">{expediente.estado}</span>
-                <span>{formatDate(expediente.fechaCreacion)}</span>
-              </div>
-
-              <div className="actions-row">
-                {activeTab === 'unassigned' ? (
-                  <button type="button" onClick={() => onAssignToMe(expediente)}>
-                    Asignarmelo
-                  </button>
-                ) : (
-                  <button type="button" onClick={() => onUnassign(expediente)}>
-                    Desasignar
-                  </button>
-                )}
-
-                <Link className="ghost-link" to={`/expedientes/${expediente.id}`}>
-                  Abrir
-                </Link>
-              </div>
-            </article>
-          ))}
+        <div className="table-wrap">
+          <table className="exp-table">
+            <thead>
+              <tr>
+                <th>Tipo Expediente</th>
+                <th>N expediente</th>
+                <th>Reg. Entrada</th>
+                <th>Fec. Registro</th>
+                <th>Fase</th>
+                <th>Usuario</th>
+                <th>Estado</th>
+                <th>Consulta</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredData.map((expediente) => (
+                <tr key={expediente.id}>
+                  <td>{expediente.tipo}</td>
+                  <td>{expediente.numeroExpediente}</td>
+                  <td>{expediente.numeroExpediente}</td>
+                  <td>{formatDate(expediente.fechaCreacion)}</td>
+                  <td>{expediente.procedimiento || '-'}</td>
+                  <td>{expediente.asignadoAId ? auth.username : 'Sin asignar'}</td>
+                  <td>{expediente.estado}</td>
+                  <td>
+                    <div className="table-actions">
+                      {renderActionButtons(expediente)}
+                      <Link className="ghost-link" to={`/expedientes/${expediente.id}`}>
+                        Ver
+                      </Link>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
 
         {!isLoading &&
-        (activeTab === 'assigned'
-          ? (assignedPageData?.content ?? []).length === 0
-          : (unassignedPageData?.content ?? []).length === 0) ? (
+        filteredData.length === 0 ? (
           <p>
             {activeTab === 'assigned'
               ? 'No tienes expedientes asignados en esta pagina.'
-              : 'No hay expedientes sin asignar en esta pagina.'}
+              : activeTab === 'unassigned'
+                ? 'No hay expedientes sin asignar en esta pagina.'
+                : 'No hay expedientes que coincidan con la busqueda actual.'}
           </p>
         ) : null}
 
@@ -256,22 +394,26 @@ export function DashboardPage({ auth }: DashboardPageProps) {
                 return
               }
 
+              if (activeTab === 'search') {
+                setAllPage((prev) => Math.max(prev - 1, 0))
+                return
+              }
+
               setUnassignedPage((prev) => Math.max(prev - 1, 0))
             }}
             disabled={Boolean(
               activeTab === 'assigned'
                 ? assignedPageData?.first
-                : unassignedPageData?.first,
+                : activeTab === 'search'
+                  ? allPageData?.first
+                  : unassignedPageData?.first,
             )}
           >
             Anterior
           </button>
           <span>
             Pagina{' '}
-            {(activeTab === 'assigned'
-              ? assignedPageData?.number ?? 0
-              : unassignedPageData?.number ?? 0) + 1}{' '}
-            de {activeTab === 'assigned' ? assignedPageData?.totalPages ?? 1 : unassignedPageData?.totalPages ?? 1}
+            {(currentPageData?.number ?? 0) + 1} de {currentPageData?.totalPages ?? 1}
           </span>
           <button
             type="button"
@@ -281,12 +423,19 @@ export function DashboardPage({ auth }: DashboardPageProps) {
                 return
               }
 
+              if (activeTab === 'search') {
+                setAllPage((prev) => prev + 1)
+                return
+              }
+
               setUnassignedPage((prev) => prev + 1)
             }}
             disabled={Boolean(
               activeTab === 'assigned'
                 ? assignedPageData?.last
-                : unassignedPageData?.last,
+                : activeTab === 'search'
+                  ? allPageData?.last
+                  : unassignedPageData?.last,
             )}
           >
             Siguiente

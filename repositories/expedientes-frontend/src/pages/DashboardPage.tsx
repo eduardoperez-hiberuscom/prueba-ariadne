@@ -1,6 +1,12 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { getExpedienteByNumero, listExpedientes } from '../api/client'
+import {
+  assignExpedienteToMe,
+  getExpedienteByNumero,
+  listMyAssignedExpedientes,
+  listUnassignedExpedientes,
+  unassignExpedienteFromMe,
+} from '../api/client'
 import type { AuthCredentials, Expediente, PageResult } from '../types/api'
 
 interface DashboardPageProps {
@@ -20,35 +26,81 @@ function formatDate(dateTime: string | undefined): string {
 }
 
 export function DashboardPage({ auth }: DashboardPageProps) {
-  const [pageData, setPageData] = useState<PageResult<Expediente> | null>(null)
-  const [page, setPage] = useState(0)
+  const [assignedPageData, setAssignedPageData] = useState<PageResult<Expediente> | null>(null)
+  const [unassignedPageData, setUnassignedPageData] = useState<PageResult<Expediente> | null>(null)
+  const [assignedPage, setAssignedPage] = useState(0)
+  const [unassignedPage, setUnassignedPage] = useState(0)
+  const [activeTab, setActiveTab] = useState<'assigned' | 'unassigned'>('assigned')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [actionMessage, setActionMessage] = useState('')
   const [searchNumero, setSearchNumero] = useState('')
   const [searchResult, setSearchResult] = useState<Expediente | null>(null)
 
+  const fetchAssigned = () =>
+    listMyAssignedExpedientes(auth, assignedPage).then((result) => {
+      setAssignedPageData(result)
+    })
+
+  const fetchUnassigned = () =>
+    listUnassignedExpedientes(auth, unassignedPage).then((result) => {
+      setUnassignedPageData(result)
+    })
+
   useEffect(() => {
-    void listExpedientes(auth, page)
-      .then((result) => {
-        setPageData(result)
+    setIsLoading(true)
+    void Promise.all([fetchAssigned(), fetchUnassigned()])
+      .then(() => {
         setError('')
       })
       .catch(() => {
-        setError('No se pudo cargar el listado. Revisa credenciales o backend.')
+        setError('No se pudieron cargar las bandejas. Revisa credenciales o backend.')
       })
       .finally(() => {
         setIsLoading(false)
       })
-  }, [auth, page])
+  }, [auth, assignedPage, unassignedPage])
 
-  const statusSummary = useMemo(() => {
-    const entries = pageData?.content ?? []
-    const summary = new Map<string, number>()
-    entries.forEach((item) => {
-      summary.set(item.estado, (summary.get(item.estado) ?? 0) + 1)
+  const refreshBandejas = () =>
+    Promise.all([fetchAssigned(), fetchUnassigned()]).then(() => {
+      setError('')
     })
-    return summary
-  }, [pageData])
+
+  const onAssignToMe = (expediente: Expediente) => {
+    setActionMessage('')
+    setError('')
+    setIsLoading(true)
+
+    void assignExpedienteToMe(auth, expediente.id)
+      .then(() => refreshBandejas())
+      .then(() => {
+        setActionMessage(`Expediente ${expediente.numeroExpediente} asignado correctamente.`)
+      })
+      .catch(() => {
+        setError('No se pudo asignar el expediente.')
+      })
+      .finally(() => {
+        setIsLoading(false)
+      })
+  }
+
+  const onUnassign = (expediente: Expediente) => {
+    setActionMessage('')
+    setError('')
+    setIsLoading(true)
+
+    void unassignExpedienteFromMe(auth, expediente.id)
+      .then(() => refreshBandejas())
+      .then(() => {
+        setActionMessage(`Expediente ${expediente.numeroExpediente} desasignado correctamente.`)
+      })
+      .catch(() => {
+        setError('No se pudo desasignar el expediente.')
+      })
+      .finally(() => {
+        setIsLoading(false)
+      })
+  }
 
   const onSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -75,26 +127,29 @@ export function DashboardPage({ auth }: DashboardPageProps) {
   return (
     <section className="page-grid">
       <article className="panel hero-panel">
-        <p className="overline">Panel operativo</p>
-        <h1>Centro de control de expedientes</h1>
+        <p className="overline">Panel principal</p>
+        <h1>Bandeja de expedientes</h1>
         <p>
-          Gestiona el ciclo administrativo completo: alta, seguimiento y emision
-          de documentos desde una sola interfaz.
+          Muevete entre tus expedientes asignados y los pendientes de asignacion.
+          Puedes autoasignarte o liberar asignaciones directamente desde aqui.
         </p>
       </article>
 
       <article className="kpi-row">
         <div className="panel kpi-card">
-          <h2>Total expedientes</h2>
-          <p className="kpi-value">{pageData?.totalElements ?? 0}</p>
+          <h2>Mis asignados</h2>
+          <p className="kpi-value">{assignedPageData?.totalElements ?? 0}</p>
         </div>
         <div className="panel kpi-card">
-          <h2>Estado INICIAL</h2>
-          <p className="kpi-value">{statusSummary.get('INICIAL') ?? 0}</p>
+          <h2>Sin asignar</h2>
+          <p className="kpi-value">{unassignedPageData?.totalElements ?? 0}</p>
         </div>
         <div className="panel kpi-card">
-          <h2>Pagina actual</h2>
-          <p className="kpi-value">{(pageData?.number ?? 0) + 1}</p>
+          <h2>Total visibles</h2>
+          <p className="kpi-value">
+            {(assignedPageData?.content?.length ?? 0) +
+              (unassignedPageData?.content?.length ?? 0)}
+          </p>
         </div>
       </article>
 
@@ -119,54 +174,120 @@ export function DashboardPage({ auth }: DashboardPageProps) {
 
       <article className="panel">
         <div className="list-header">
-          <h2>Expedientes recientes</h2>
+          <h2>Gestion de asignaciones</h2>
           <Link className="ghost-link" to="/expedientes/nuevo">
             Crear nuevo
           </Link>
         </div>
 
+        <div className="actions-row">
+          <button
+            type="button"
+            onClick={() => setActiveTab('assigned')}
+            disabled={activeTab === 'assigned'}
+          >
+            Mis asignados
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('unassigned')}
+            disabled={activeTab === 'unassigned'}
+          >
+            Sin asignar
+          </button>
+        </div>
+
         {isLoading ? <p>Cargando datos...</p> : null}
         {error ? <p className="error-text">{error}</p> : null}
+        {actionMessage ? <p className="result-ok">{actionMessage}</p> : null}
 
         <div className="exp-list">
-          {(pageData?.content ?? []).map((expediente) => (
-            <Link
-              key={expediente.id}
-              className="exp-card"
-              to={`/expedientes/${expediente.id}`}
-            >
+          {(activeTab === 'assigned'
+            ? assignedPageData?.content ?? []
+            : unassignedPageData?.content ?? []
+          ).map((expediente) => (
+            <article key={expediente.id} className="exp-card">
               <p className="overline">{expediente.numeroExpediente}</p>
-              <h3>{expediente.asunto}</h3>
+              <h3>
+                <Link to={`/expedientes/${expediente.id}`}>{expediente.asunto}</Link>
+              </h3>
               <p>{expediente.descripcion || 'Sin descripcion'}</p>
               <div className="card-meta">
                 <span className="pill">{expediente.estado}</span>
                 <span>{formatDate(expediente.fechaCreacion)}</span>
               </div>
-            </Link>
+
+              <div className="actions-row">
+                {activeTab === 'unassigned' ? (
+                  <button type="button" onClick={() => onAssignToMe(expediente)}>
+                    Asignarmelo
+                  </button>
+                ) : (
+                  <button type="button" onClick={() => onUnassign(expediente)}>
+                    Desasignar
+                  </button>
+                )}
+
+                <Link className="ghost-link" to={`/expedientes/${expediente.id}`}>
+                  Abrir
+                </Link>
+              </div>
+            </article>
           ))}
         </div>
+
+        {!isLoading &&
+        (activeTab === 'assigned'
+          ? (assignedPageData?.content ?? []).length === 0
+          : (unassignedPageData?.content ?? []).length === 0) ? (
+          <p>
+            {activeTab === 'assigned'
+              ? 'No tienes expedientes asignados en esta pagina.'
+              : 'No hay expedientes sin asignar en esta pagina.'}
+          </p>
+        ) : null}
 
         <div className="pager">
           <button
             type="button"
             onClick={() => {
-              setIsLoading(true)
-              setPage((prev) => Math.max(prev - 1, 0))
+              if (activeTab === 'assigned') {
+                setAssignedPage((prev) => Math.max(prev - 1, 0))
+                return
+              }
+
+              setUnassignedPage((prev) => Math.max(prev - 1, 0))
             }}
-            disabled={Boolean(pageData?.first)}
+            disabled={Boolean(
+              activeTab === 'assigned'
+                ? assignedPageData?.first
+                : unassignedPageData?.first,
+            )}
           >
             Anterior
           </button>
           <span>
-            Pagina {(pageData?.number ?? 0) + 1} de {pageData?.totalPages ?? 1}
+            Pagina{' '}
+            {(activeTab === 'assigned'
+              ? assignedPageData?.number ?? 0
+              : unassignedPageData?.number ?? 0) + 1}{' '}
+            de {activeTab === 'assigned' ? assignedPageData?.totalPages ?? 1 : unassignedPageData?.totalPages ?? 1}
           </span>
           <button
             type="button"
             onClick={() => {
-              setIsLoading(true)
-              setPage((prev) => prev + 1)
+              if (activeTab === 'assigned') {
+                setAssignedPage((prev) => prev + 1)
+                return
+              }
+
+              setUnassignedPage((prev) => prev + 1)
             }}
-            disabled={Boolean(pageData?.last)}
+            disabled={Boolean(
+              activeTab === 'assigned'
+                ? assignedPageData?.last
+                : unassignedPageData?.last,
+            )}
           >
             Siguiente
           </button>

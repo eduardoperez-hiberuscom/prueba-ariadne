@@ -11,6 +11,8 @@ export interface Expediente {
   estado: string
   procedimiento: string
   descripcion: string
+  interesadoId?: number | null
+  asignadoAId?: number | null
   fechaCreacion: string
   fechaActualizacion?: string
 }

@@ -18,5 +18,9 @@ public interface ExpedienteRepository extends JpaRepository<Expediente, Long> {
 
     List<Expediente> findByAsignadoA(Usuario usuario);
 
+    Page<Expediente> findByAsignadoA(Usuario usuario, Pageable pageable);
+
+    Page<Expediente> findByAsignadoAIsNull(Pageable pageable);
+
     List<Expediente> findByFechaCreacionBetween(LocalDateTime inicio, LocalDateTime fin);
 }

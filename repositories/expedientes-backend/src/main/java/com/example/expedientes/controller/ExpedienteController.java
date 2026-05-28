@@ -73,6 +73,75 @@ public class ExpedienteController {
     }
 
     /**
+     * GET /api/gestor/expedientes/asignacion/mis
+     * Bandeja de expedientes asignados al usuario autenticado.
+     */
+    @GetMapping("/asignacion/mis")
+    public ResponseEntity<Page<ExpedienteDTO>> listarMisAsignados(
+            Pageable pageable,
+            Principal principal) {
+        log.info("GET /expedientes/asignacion/mis - usuario: {}", principal.getName());
+
+        try {
+            Page<ExpedienteDTO> expedientes =
+                    expedienteService.listarMisAsignados(principal.getName(), pageable);
+            return ResponseEntity.ok(expedientes);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    /**
+     * GET /api/gestor/expedientes/asignacion/sin-asignar
+     * Bandeja de expedientes sin asignacion.
+     */
+    @GetMapping("/asignacion/sin-asignar")
+    public ResponseEntity<Page<ExpedienteDTO>> listarSinAsignar(Pageable pageable) {
+        log.info("GET /expedientes/asignacion/sin-asignar");
+
+        Page<ExpedienteDTO> expedientes = expedienteService.listarSinAsignar(pageable);
+        return ResponseEntity.ok(expedientes);
+    }
+
+    /**
+     * PUT /api/gestor/expedientes/{id}/asignacion/auto
+     * Asignar expediente al propio usuario autenticado.
+     */
+    @PutMapping("/{id}/asignacion/auto")
+    public ResponseEntity<ExpedienteDTO> autoAsignar(
+            @PathVariable Long id,
+            Principal principal) {
+        log.info("PUT /expedientes/{}/asignacion/auto - usuario: {}", id, principal.getName());
+
+        try {
+            ExpedienteDTO dto = expedienteService.autoAsignarExpediente(id, principal.getName());
+            return ResponseEntity.ok(dto);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    /**
+     * DELETE /api/gestor/expedientes/{id}/asignacion/auto
+     * Quitar asignacion del expediente.
+     */
+    @DeleteMapping("/{id}/asignacion/auto")
+    public ResponseEntity<ExpedienteDTO> desasignar(
+            @PathVariable Long id,
+            Principal principal) {
+        log.info("DELETE /expedientes/{}/asignacion/auto - usuario: {}", id, principal.getName());
+
+        try {
+            ExpedienteDTO dto = expedienteService.desasignarExpediente(id, principal.getName());
+            return ResponseEntity.ok(dto);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    /**
      * GET /api/gestor/expedientes/numero/{numero}
      * Buscar por número de expediente
      */

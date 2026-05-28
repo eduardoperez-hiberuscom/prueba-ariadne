@@ -74,6 +74,68 @@ export async function createExpediente(
   return response.data
 }
 
+export async function listMyAssignedExpedientes(
+  auth: AuthCredentials,
+  page = 0,
+  size = 8,
+): Promise<PageResult<Expediente>> {
+  const response = await api.get<PageResult<Expediente>>('/gestor/expedientes/asignacion/mis', {
+    ...withAuth(auth),
+    params: {
+      page,
+      size,
+      sort: 'fechaCreacion,desc',
+    },
+  })
+
+  return response.data
+}
+
+export async function listUnassignedExpedientes(
+  auth: AuthCredentials,
+  page = 0,
+  size = 8,
+): Promise<PageResult<Expediente>> {
+  const response = await api.get<PageResult<Expediente>>(
+    '/gestor/expedientes/asignacion/sin-asignar',
+    {
+      ...withAuth(auth),
+      params: {
+        page,
+        size,
+        sort: 'fechaCreacion,desc',
+      },
+    },
+  )
+
+  return response.data
+}
+
+export async function assignExpedienteToMe(
+  auth: AuthCredentials,
+  expedienteId: number,
+): Promise<Expediente> {
+  const response = await api.put<Expediente>(
+    `/gestor/expedientes/${expedienteId}/asignacion/auto`,
+    {},
+    withAuth(auth),
+  )
+
+  return response.data
+}
+
+export async function unassignExpedienteFromMe(
+  auth: AuthCredentials,
+  expedienteId: number,
+): Promise<Expediente> {
+  const response = await api.delete<Expediente>(
+    `/gestor/expedientes/${expedienteId}/asignacion/auto`,
+    withAuth(auth),
+  )
+
+  return response.data
+}
+
 export async function generateDocumento(
   auth: AuthCredentials,
   payload: GenerateDocumentoPayload,

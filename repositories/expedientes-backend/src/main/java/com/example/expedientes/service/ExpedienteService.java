@@ -96,6 +96,58 @@ public class ExpedienteService {
                 .map(this::mapToDTO);
     }
 
+        /**
+         * Obtener expedientes asignados al usuario autenticado.
+         */
+        public Page<ExpedienteDTO> listarMisAsignados(String usuarioUid, Pageable pageable) {
+        Usuario usuario = resolveUsuario(usuarioUid);
+        return expedienteRepository.findByAsignadoA(usuario, pageable)
+            .map(this::mapToDTO);
+        }
+
+        /**
+         * Obtener expedientes sin gestor asignado.
+         */
+        public Page<ExpedienteDTO> listarSinAsignar(Pageable pageable) {
+        return expedienteRepository.findByAsignadoAIsNull(pageable)
+            .map(this::mapToDTO);
+        }
+
+        /**
+         * Asignar expediente al usuario autenticado.
+         */
+        public ExpedienteDTO autoAsignarExpediente(Long expedienteId, String usuarioUid) {
+        Expediente expediente = expedienteRepository.findById(expedienteId)
+            .orElseThrow(() -> new RuntimeException("Expediente no encontrado: " + expedienteId));
+        Usuario usuario = resolveUsuario(usuarioUid);
+
+        expediente.setAsignadoA(usuario);
+        expediente.setFechaActualizacion(LocalDateTime.now());
+
+        Expediente saved = expedienteRepository.save(expediente);
+        auditLogger.log(usuarioUid, "ASIGNACION_EXPEDIENTE",
+            "Autoasignado expediente: " + saved.getNumeroExpediente(), saved.getId());
+
+        return mapToDTO(saved);
+        }
+
+        /**
+         * Quitar asignacion del expediente.
+         */
+        public ExpedienteDTO desasignarExpediente(Long expedienteId, String usuarioUid) {
+        Expediente expediente = expedienteRepository.findById(expedienteId)
+            .orElseThrow(() -> new RuntimeException("Expediente no encontrado: " + expedienteId));
+
+        expediente.setAsignadoA(null);
+        expediente.setFechaActualizacion(LocalDateTime.now());
+
+        Expediente saved = expedienteRepository.save(expediente);
+        auditLogger.log(usuarioUid, "DESASIGNACION_EXPEDIENTE",
+            "Desasignado expediente: " + saved.getNumeroExpediente(), saved.getId());
+
+        return mapToDTO(saved);
+        }
+
     /**
      * Buscar por número expediente
      */
@@ -113,6 +165,20 @@ public class ExpedienteService {
         return fecha + "-" + String.format("%05d", secuencia);
     }
 
+    private Usuario resolveUsuario(String usuarioUid) {
+        Optional<Usuario> direct = usuarioRepository.findByUid(usuarioUid);
+        if (direct.isPresent()) {
+            return direct.get();
+        }
+
+        Optional<Usuario> withLdapSuffix = usuarioRepository.findByUid(usuarioUid + ".ldap");
+        if (withLdapSuffix.isPresent()) {
+            return withLdapSuffix.get();
+        }
+
+        throw new IllegalArgumentException("No existe usuario para uid: " + usuarioUid);
+    }
+
     private ExpedienteDTO mapToDTO(Expediente expediente) {
         return ExpedienteDTO.builder()
                 .id(expediente.getId())
@@ -122,6 +188,8 @@ public class ExpedienteService {
                 .estado(expediente.getEstado().toString())
                 .procedimiento(expediente.getProcedimiento())
                 .descripcion(expediente.getDescripcion())
+                .interesadoId(expediente.getInteresado() != null ? expediente.getInteresado().getId() : null)
+                .asignadoAId(expediente.getAsignadoA() != null ? expediente.getAsignadoA().getId() : null)
                 .fechaCreacion(expediente.getFechaCreacion())
                 .fechaActualizacion(expediente.getFechaActualizacion())
                 .build();

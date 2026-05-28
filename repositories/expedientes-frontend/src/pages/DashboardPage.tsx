@@ -192,7 +192,7 @@ export function DashboardPage({ auth }: DashboardPageProps) {
   const renderActionButtons = (expediente: Expediente) => {
     if (activeTab === 'assigned') {
       return (
-        <button type="button" onClick={() => onUnassign(expediente)}>
+        <button type="button" className="btn btn-outline-danger btn-sm" onClick={() => onUnassign(expediente)}>
           Desasignar
         </button>
       )
@@ -200,56 +200,62 @@ export function DashboardPage({ auth }: DashboardPageProps) {
 
     if (activeTab === 'unassigned') {
       return (
-        <button type="button" onClick={() => onAssignToMe(expediente)}>
+        <button type="button" className="btn btn-outline-success btn-sm" onClick={() => onAssignToMe(expediente)}>
           Asignarmelo
         </button>
       )
     }
 
     return expediente.asignadoAId ? (
-      <button type="button" onClick={() => onUnassign(expediente)}>
+      <button type="button" className="btn btn-outline-danger btn-sm" onClick={() => onUnassign(expediente)}>
         Desasignar
       </button>
     ) : (
-      <button type="button" onClick={() => onAssignToMe(expediente)}>
+      <button type="button" className="btn btn-outline-success btn-sm" onClick={() => onAssignToMe(expediente)}>
         Asignarmelo
       </button>
     )
   }
 
   return (
-    <section className="page-grid">
-      <article className="panel hero-panel">
+    <section className="page-grid d-grid gap-3">
+      <article className="panel hero-panel card border-0 shadow-sm p-3">
         <p className="overline">Expedientes</p>
         <h1>{tabTitle}</h1>
         <p>{tabDescription}</p>
       </article>
 
-      <article className="kpi-row">
-        <div className="panel kpi-card">
+      <article className="row g-3">
+        <div className="col-12 col-md-4">
+          <div className="panel kpi-card card border-0 shadow-sm p-3 h-100">
           <h2>Mis asignados</h2>
           <p className="kpi-value">{assignedPageData?.totalElements ?? 0}</p>
         </div>
-        <div className="panel kpi-card">
+        </div>
+        <div className="col-12 col-md-4">
+          <div className="panel kpi-card card border-0 shadow-sm p-3 h-100">
           <h2>Sin asignar</h2>
           <p className="kpi-value">{unassignedPageData?.totalElements ?? 0}</p>
         </div>
-        <div className="panel kpi-card">
+        </div>
+        <div className="col-12 col-md-4">
+          <div className="panel kpi-card card border-0 shadow-sm p-3 h-100">
           <h2>Total visibles</h2>
           <p className="kpi-value">
             {(assignedPageData?.content?.length ?? 0) +
               (unassignedPageData?.content?.length ?? 0)}
           </p>
         </div>
+        </div>
       </article>
 
-      <article className="panel">
-        <div className="tab-strip" role="tablist" aria-label="Bandejas de expedientes">
+      <article className="panel card border-0 shadow-sm p-3">
+        <div className="tab-strip nav nav-tabs" role="tablist" aria-label="Bandejas de expedientes">
           <button
             type="button"
             role="tab"
             aria-selected={activeTab === 'assigned'}
-            className={activeTab === 'assigned' ? 'active' : ''}
+            className={activeTab === 'assigned' ? 'nav-link active' : 'nav-link'}
             onClick={() => setActiveTab('assigned')}
           >
             Mis Expedientes
@@ -258,7 +264,7 @@ export function DashboardPage({ auth }: DashboardPageProps) {
             type="button"
             role="tab"
             aria-selected={activeTab === 'search'}
-            className={activeTab === 'search' ? 'active' : ''}
+            className={activeTab === 'search' ? 'nav-link active' : 'nav-link'}
             onClick={() => setActiveTab('search')}
           >
             Busqueda de Expedientes
@@ -267,31 +273,39 @@ export function DashboardPage({ auth }: DashboardPageProps) {
             type="button"
             role="tab"
             aria-selected={activeTab === 'unassigned'}
-            className={activeTab === 'unassigned' ? 'active' : ''}
+            className={activeTab === 'unassigned' ? 'nav-link active' : 'nav-link'}
             onClick={() => setActiveTab('unassigned')}
           >
             Sin asignar
           </button>
         </div>
 
-        <form className="search-grid" onSubmit={onSearch}>
+        <form className="search-grid row g-2 align-items-end" onSubmit={onSearch}>
+          <div className="col-12 col-lg-3">
           <input
+            className="form-control"
             value={draftFilters.query}
             onChange={(event) =>
               setDraftFilters((prev) => ({ ...prev, query: event.target.value }))
             }
             placeholder="Buscar por NIF, N de Expediente..."
           />
+          </div>
 
+          <div className="col-12 col-lg-2">
           <input
+            className="form-control"
             type="date"
             value={draftFilters.fecha}
             onChange={(event) =>
               setDraftFilters((prev) => ({ ...prev, fecha: event.target.value }))
             }
           />
+          </div>
 
+          <div className="col-12 col-lg-2">
           <select
+            className="form-select"
             value={draftFilters.fase}
             onChange={(event) =>
               setDraftFilters((prev) => ({ ...prev, fase: event.target.value }))
@@ -304,8 +318,11 @@ export function DashboardPage({ auth }: DashboardPageProps) {
               </option>
             ))}
           </select>
+          </div>
 
+          <div className="col-12 col-lg-2">
           <select
+            className="form-select"
             value={draftFilters.estado}
             onChange={(event) =>
               setDraftFilters((prev) => ({ ...prev, estado: event.target.value }))
@@ -318,26 +335,31 @@ export function DashboardPage({ auth }: DashboardPageProps) {
               </option>
             ))}
           </select>
+          </div>
 
-          <button type="submit">Buscar</button>
-          <button type="button" className="ghost-link" onClick={onClearFilters}>
+          <div className="col-6 col-lg-1 d-grid">
+          <button type="submit" className="btn btn-primary">Buscar</button>
+          </div>
+          <div className="col-6 col-lg-1 d-grid">
+          <button type="button" className="btn btn-outline-secondary" onClick={onClearFilters}>
             Limpiar
           </button>
+          </div>
         </form>
 
         <div className="list-header">
           <h2>Se han encontrado {filteredData.length} expedientes</h2>
-          <Link className="ghost-link" to="/expedientes/nuevo">
+          <Link className="btn btn-outline-primary btn-sm" to="/expedientes/nuevo">
             Nuevo expediente
           </Link>
         </div>
 
-        {isLoading ? <p>Cargando datos...</p> : null}
-        {error ? <p className="error-text">{error}</p> : null}
-        {actionMessage ? <p className="result-ok">{actionMessage}</p> : null}
+        {isLoading ? <div className="alert alert-info py-2">Cargando datos...</div> : null}
+        {error ? <div className="alert alert-danger py-2">{error}</div> : null}
+        {actionMessage ? <div className="alert alert-success py-2">{actionMessage}</div> : null}
 
-        <div className="table-wrap">
-          <table className="exp-table">
+        <div className="table-wrap table-responsive">
+          <table className="exp-table table table-striped table-hover align-middle mb-0">
             <thead>
               <tr>
                 <th>Tipo Expediente</th>
@@ -363,7 +385,7 @@ export function DashboardPage({ auth }: DashboardPageProps) {
                   <td>
                     <div className="table-actions">
                       {renderActionButtons(expediente)}
-                      <Link className="ghost-link" to={`/expedientes/${expediente.id}`}>
+                      <Link className="btn btn-outline-primary btn-sm" to={`/expedientes/${expediente.id}`}>
                         Ver
                       </Link>
                     </div>
@@ -385,8 +407,9 @@ export function DashboardPage({ auth }: DashboardPageProps) {
           </p>
         ) : null}
 
-        <div className="pager">
+        <div className="pager d-flex justify-content-between align-items-center gap-2">
           <button
+            className="btn btn-outline-primary btn-sm"
             type="button"
             onClick={() => {
               if (activeTab === 'assigned') {
@@ -416,6 +439,7 @@ export function DashboardPage({ auth }: DashboardPageProps) {
             {(currentPageData?.number ?? 0) + 1} de {currentPageData?.totalPages ?? 1}
           </span>
           <button
+            className="btn btn-outline-primary btn-sm"
             type="button"
             onClick={() => {
               if (activeTab === 'assigned') {

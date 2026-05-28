@@ -116,8 +116,8 @@ function App() {
 
   return (
     <BrowserRouter>
-      <div className="app-shell">
-        <header className="topbar reveal-up">
+      <div className="app-shell container-fluid py-3">
+        <header className="topbar reveal-up card border-0 shadow-sm mb-3 p-3">
           <div className="brand-block">
             <p className="overline">Gestor Administrativo</p>
             <Link to="/" className="brand-link">
@@ -125,23 +125,27 @@ function App() {
             </Link>
           </div>
 
-          <nav className="main-nav" aria-label="Navegacion principal">
+          <nav className="main-nav nav nav-pills" aria-label="Navegacion principal">
             {isAuthenticated ? (
               <>
-                <NavLink to="/" end>
+                <NavLink to="/" end className="nav-link">
                   Panel
                 </NavLink>
-                <NavLink to="/expedientes/nuevo">Nuevo expediente</NavLink>
+                <NavLink to="/expedientes/nuevo" className="nav-link">
+                  Nuevo expediente
+                </NavLink>
               </>
             ) : (
-              <NavLink to="/login">Acceso</NavLink>
+              <NavLink to="/login" className="nav-link">
+                Acceso
+              </NavLink>
             )}
           </nav>
 
           {isAuthenticated ? (
             <div className="topbar-auth">
               <p className="user-chip">Sesion activa: {auth?.username}</p>
-              <button type="button" onClick={onLogout}>
+              <button type="button" className="btn btn-outline-secondary btn-sm" onClick={onLogout}>
                 Cerrar sesion
               </button>
             </div>
@@ -158,11 +162,11 @@ function App() {
                 isAuthenticated ? (
                   <Navigate to="/" replace />
                 ) : (
-                  <section className="login-layout">
-                    <article className="panel login-card hero-panel">
+                  <section className="login-layout container-fluid">
+                    <article className="panel login-card hero-panel card border-0 shadow-sm p-4">
                       <p className="overline">Acceso seguro</p>
                       <h1>Inicia sesion para usar Expedientes 360</h1>
-                      <p>
+                      <p className="mb-0">
                         El panel y las operaciones de alta quedan protegidos hasta
                         validar credenciales contra la API.
                       </p>
@@ -171,6 +175,7 @@ function App() {
                         <label>
                           Usuario
                           <input
+                            className="form-control"
                             aria-label="Usuario"
                             value={draftAuth.username}
                             onChange={(event) =>
@@ -186,6 +191,7 @@ function App() {
                         <label>
                           Contrasena
                           <input
+                            className="form-control"
                             aria-label="Contrasena"
                             type="password"
                             value={draftAuth.password}
@@ -199,7 +205,7 @@ function App() {
                           />
                         </label>
 
-                        <button type="submit" disabled={isSigningIn}>
+                        <button type="submit" className="btn btn-primary" disabled={isSigningIn}>
                           {isSigningIn ? 'Validando...' : 'Entrar'}
                         </button>
                       </form>

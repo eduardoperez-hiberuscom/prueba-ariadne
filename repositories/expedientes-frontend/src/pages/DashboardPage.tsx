@@ -192,7 +192,7 @@ export function DashboardPage({ auth }: DashboardPageProps) {
   const renderActionButtons = (expediente: Expediente) => {
     if (activeTab === 'assigned') {
       return (
-        <button type="button" className="btn btn-outline-danger btn-sm" onClick={() => onUnassign(expediente)}>
+        <button type="button" className="btn btn-outline-danger btn-sm action-btn-main" onClick={() => onUnassign(expediente)}>
           Desasignar
         </button>
       )
@@ -200,18 +200,18 @@ export function DashboardPage({ auth }: DashboardPageProps) {
 
     if (activeTab === 'unassigned') {
       return (
-        <button type="button" className="btn btn-outline-success btn-sm" onClick={() => onAssignToMe(expediente)}>
+        <button type="button" className="btn btn-outline-success btn-sm action-btn-main" onClick={() => onAssignToMe(expediente)}>
           Asignarmelo
         </button>
       )
     }
 
     return expediente.asignadoAId ? (
-      <button type="button" className="btn btn-outline-danger btn-sm" onClick={() => onUnassign(expediente)}>
+      <button type="button" className="btn btn-outline-danger btn-sm action-btn-main" onClick={() => onUnassign(expediente)}>
         Desasignar
       </button>
     ) : (
-      <button type="button" className="btn btn-outline-success btn-sm" onClick={() => onAssignToMe(expediente)}>
+      <button type="button" className="btn btn-outline-success btn-sm action-btn-main" onClick={() => onAssignToMe(expediente)}>
         Asignarmelo
       </button>
     )
@@ -433,7 +433,7 @@ export function DashboardPage({ auth }: DashboardPageProps) {
                   <td>
                     <div className="table-actions">
                       {renderActionButtons(expediente)}
-                      <Link className="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1" to={`/expedientes/${expediente.id}`}>
+                      <Link className="btn btn-outline-primary btn-sm d-inline-flex align-items-center justify-content-center gap-1 action-btn-view" to={`/expedientes/${expediente.id}`}>
                         <i className="bi bi-eye"></i>
                         Ver
                       </Link>

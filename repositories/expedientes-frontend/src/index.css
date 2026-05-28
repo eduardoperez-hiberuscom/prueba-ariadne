@@ -263,7 +263,18 @@ p {
   display: flex;
   gap: 0.55rem;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+}
+
+.action-btn-main {
+  width: 130px;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.action-btn-view {
+  width: 74px;
+  white-space: nowrap;
 }
 
 label {

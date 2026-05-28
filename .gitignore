@@ -1,0 +1,15 @@
+
+# ===========================================
+# ARIADNE — auto-generated (do NOT commit)
+# ===========================================
+ariadne/
+.ariadne/
+.ariadne.yaml
+INSTALLED_AGENTS.md
+skills_manifest.json
+specs/
+.github/agents/
+.github/prompts/
+.github/skills/
+.env.local
+.env.*.local

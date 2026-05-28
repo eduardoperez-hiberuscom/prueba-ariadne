@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+      xmlns:f="http://xmlns.jcp.org/jsf/core"
+      xmlns:p="http://primefaces.org/ui">
+
+<h:head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Expedientes | Panel de Control</title>
+    <h:outputStylesheet library="css" name="style.css"/>
+</h:head>
+
+<h:body>
+    <div class="app-shell">
+        <header class="hero-panel">
+            <div class="hero-copy">
+                <span class="eyebrow">Sistema de Gestión de Expedientes</span>
+                <h1>Panel de control operativo</h1>
+                <p>
+                    Seguimiento visual de expedientes, estados y actividad reciente con una interfaz clara,
+                    moderna y enfocada en productividad.
+                </p>
+            </div>
+
+            <div class="hero-actions">
+                <h:link outcome="crear-expediente" value="+ Nuevo expediente" styleClass="btn-primary"/>
+                <h:commandLink value="Actualizar" action="#{expedienteBean.cargar}" styleClass="btn-secondary"/>
+            </div>
+        </header>
+
+        <h:form id="formExpedientes" styleClass="dashboard-form">
+            <section class="stats-grid">
+                <article class="stat-card">
+                    <span class="stat-label">Total expedientes</span>
+                    <strong class="stat-value">#{expedienteBean.totalExpedientes}</strong>
+                    <span class="stat-hint">Registros disponibles en el panel</span>
+                </article>
+                <article class="stat-card accent-soft">
+                    <span class="stat-label">Abiertos</span>
+                    <strong class="stat-value">#{expedienteBean.abiertos}</strong>
+                    <span class="stat-hint">En fase inicial o pendientes</span>
+                </article>
+                <article class="stat-card accent-warm">
+                    <span class="stat-label">En tramitación</span>
+                    <strong class="stat-value">#{expedienteBean.enTramitacion}</strong>
+                    <span class="stat-hint">Expedientes en curso</span>
+                </article>
+                <article class="stat-card accent-neutral">
+                    <span class="stat-label">Cerrados</span>
+                    <strong class="stat-value">#{expedienteBean.cerrados}</strong>
+                    <span class="stat-hint">Finalizados o firmados</span>
+                </article>
+            </section>
+
+            <section class="surface-panel toolbar-panel">
+                <div class="toolbar-copy">
+                    <span class="section-label">Listado operativo</span>
+                    <h2>Expedientes recientes</h2>
+                    <p>Busca por número, asunto, tipo, procedimiento o estado.</p>
+                </div>
+
+                <div class="toolbar-controls">
+                    <p:inputText value="#{expedienteBean.filtro}" placeholder="Buscar expediente..."
+                                 styleClass="search-input"/>
+                    <p:commandButton value="Buscar" action="#{expedienteBean.cargar}"
+                                     update="formExpedientes" styleClass="btn-primary"/>
+                    <p:commandButton value="Limpiar" action="#{expedienteBean.limpiarFiltro}"
+                                     update="formExpedientes" styleClass="btn-secondary"/>
+                </div>
+            </section>
+
+            <section class="surface-panel table-panel">
+                <p:dataTable var="exp" value="#{expedienteBean.expedientes}" paginator="true" rows="10"
+                             emptyMessage="No hay expedientes para mostrar"
+                             paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink}"
+                             currentPageReportTemplate="Mostrando {startRecord} a {endRecord} de {totalRecords}"
+                             styleClass="expedientes-table" rowIndexVar="rowIndex">
+
+                    <p:column headerText="#" styleClass="col-index" width="60">
+                        <h:outputText value="#{rowIndex + 1}"/>
+                    </p:column>
+
+                    <p:column headerText="Número expediente" sortBy="#{exp.numeroExpediente}">
+                        <div class="exp-number">
+                            <h:link outcome="detalle-expediente" value="#{exp.numeroExpediente}" styleClass="exp-number-link">
+                                <f:param name="id" value="#{exp.id}"/>
+                            </h:link>
+                            <span class="muted-text">ID #{exp.id}</span>
+                        </div>
+                    </p:column>
+
+                    <p:column headerText="Asunto" sortBy="#{exp.asunto}">
+                        <h:outputText value="#{exp.asunto}"/>
+                    </p:column>
+
+                    <p:column headerText="Tipo" sortBy="#{exp.tipo}">
+                        <span class="badge badge-type">#{exp.tipo}</span>
+                    </p:column>
+
+                    <p:column headerText="Estado" sortBy="#{exp.estado}">
+                        <span class="#{expedienteBean.estadoClass(exp)}">#{exp.estado}</span>
+                    </p:column>
+
+                    <p:column headerText="Actualizado" sortBy="#{exp.fechaActualizacion}">
+                        <h:outputText value="#{exp.fechaActualizacion}">
+                            <f:convertDateTime pattern="dd/MM/yyyy HH:mm"/>
+                        </h:outputText>
+                    </p:column>
+
+                    <p:column headerText="Acciones" styleClass="actions-column">
+                        <h:link outcome="detalle-expediente" value="Ver" styleClass="action-link action-link-primary">
+                            <f:param name="id" value="#{exp.id}"/>
+                        </h:link>
+                    </p:column>
+
+                </p:dataTable>
+            </section>
+        </h:form>
+    </div>
+</h:body>
+
+</html>

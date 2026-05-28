@@ -1,0 +1,178 @@
+{
+  "info": {
+    "_postman_id": "7df2f8f2-2fd0-4fd4-9b8d-2b68903e2ba0",
+    "name": "Expedientes Local",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "00 - Obtener CSRF (Login Page)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+              "var html = pm.response.text();",
+              "var match = html.match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/);",
+              "if (match && match[1]) {",
+              "  pm.collectionVariables.set('csrfToken', match[1]);",
+              "} else {",
+              "  pm.test('CSRF token found', function () { throw new Error('No se encontro _csrf en la respuesta'); });",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["login"]
+        }
+      }
+    },
+    {
+      "name": "01 - Listar Expedientes",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": {
+          "type": "basic",
+          "basic": [
+            { "key": "username", "value": "{{username}}", "type": "string" },
+            { "key": "password", "value": "{{password}}", "type": "string" }
+          ]
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/gestor/expedientes?page=0&size=10",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "gestor", "expedientes"],
+          "query": [
+            { "key": "page", "value": "0" },
+            { "key": "size", "value": "10" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "02 - Crear Expediente",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 201', function () { pm.response.to.have.status(201); });",
+              "var json = pm.response.json();",
+              "if (json && json.id) { pm.collectionVariables.set('expedienteId', json.id); }",
+              "if (json && json.numeroExpediente) { pm.collectionVariables.set('numeroExpediente', json.numeroExpediente); }"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "X-CSRF-TOKEN", "value": "{{csrfToken}}" }
+        ],
+        "auth": {
+          "type": "basic",
+          "basic": [
+            { "key": "username", "value": "{{username}}", "type": "string" },
+            { "key": "password", "value": "{{password}}", "type": "string" }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"asunto\": \"Prueba API Postman\",\n  \"tipo\": \"REQUERIMIENTO\",\n  \"procedimiento\": \"REQUERIMIENTO_GENERICO\",\n  \"descripcion\": \"Expediente creado desde coleccion Postman\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/gestor/expedientes",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "gestor", "expedientes"]
+        }
+      }
+    },
+    {
+      "name": "03 - Obtener Expediente Por ID",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": {
+          "type": "basic",
+          "basic": [
+            { "key": "username", "value": "{{username}}", "type": "string" },
+            { "key": "password", "value": "{{password}}", "type": "string" }
+          ]
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/gestor/expedientes/{{expedienteId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "gestor", "expedientes", "{{expedienteId}}"]
+        }
+      }
+    },
+    {
+      "name": "04 - Buscar Por Numero",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": {
+          "type": "basic",
+          "basic": [
+            { "key": "username", "value": "{{username}}", "type": "string" },
+            { "key": "password", "value": "{{password}}", "type": "string" }
+          ]
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/gestor/expedientes/numero/{{numeroExpediente}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "gestor", "expedientes", "numero", "{{numeroExpediente}}"]
+        }
+      }
+    },
+    {
+      "name": "05 - Generar Documento",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "X-CSRF-TOKEN", "value": "{{csrfToken}}" }
+        ],
+        "auth": {
+          "type": "basic",
+          "basic": [
+            { "key": "username", "value": "{{username}}", "type": "string" },
+            { "key": "password", "value": "{{password}}", "type": "string" }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"contenido\": \"Documento generado desde Postman\",\n  \"fecha\": \"2026-05-20\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/gestor/documentos?expedienteId={{expedienteId}}&tipo=Requerimiento",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "gestor", "documentos"],
+          "query": [
+            { "key": "expedienteId", "value": "{{expedienteId}}" },
+            { "key": "tipo", "value": "Requerimiento" }
+          ]
+        }
+      }
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080/expedientes" },
+    { "key": "username", "value": "admin" },
+    { "key": "password", "value": "admin123" },
+    { "key": "csrfToken", "value": "" },
+    { "key": "expedienteId", "value": "1" },
+    { "key": "numeroExpediente", "value": "20260520-00001" }
+  ]
+}

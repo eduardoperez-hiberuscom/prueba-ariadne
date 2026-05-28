@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+      xmlns:f="http://xmlns.jcp.org/jsf/core"
+      xmlns:p="http://primefaces.org/ui">
+
+<h:head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Detalle expediente</title>
+    <h:outputStylesheet library="css" name="style.css"/>
+</h:head>
+
+<h:body>
+    <div class="app-shell">
+        <header class="hero-panel">
+            <div class="hero-copy">
+                <span class="eyebrow">Ficha operativa</span>
+                <h1>Detalle del expediente</h1>
+                <p>Consulta rápida de información clave, trazabilidad y estado actual.</p>
+            </div>
+            <div class="hero-actions">
+                <h:link outcome="list" value="Volver al listado" styleClass="btn-secondary"/>
+                <h:link outcome="crear-expediente" value="+ Nuevo expediente" styleClass="btn-primary"/>
+            </div>
+        </header>
+
+        <section class="surface-panel detail-panel">
+            <h:panelGroup rendered="#{not empty detalleExpedienteBean.expediente}">
+                <div class="detail-grid">
+                    <div class="detail-card">
+                        <span class="stat-label">Número expediente</span>
+                        <strong>#{detalleExpedienteBean.expediente.numeroExpediente}</strong>
+                    </div>
+                    <div class="detail-card">
+                        <span class="stat-label">Estado</span>
+                        <strong><span class="#{detalleExpedienteBean.expediente.estado eq 'INICIAL' ? 'estado-pill estado-inicial' : 'estado-pill estado-neutral'}">#{detalleExpedienteBean.expediente.estado}</span></strong>
+                    </div>
+                    <div class="detail-card">
+                        <span class="stat-label">Tipo</span>
+                        <strong>#{detalleExpedienteBean.expediente.tipo}</strong>
+                    </div>
+                    <div class="detail-card">
+                        <span class="stat-label">Procedimiento</span>
+                        <strong>#{detalleExpedienteBean.expediente.procedimiento}</strong>
+                    </div>
+                </div>
+
+                <div class="detail-body">
+                    <p><span class="muted-text">Asunto:</span> #{detalleExpedienteBean.expediente.asunto}</p>
+                    <p><span class="muted-text">Descripción:</span> #{detalleExpedienteBean.expediente.descripcion}</p>
+                    <p><span class="muted-text">Creado:</span> #{detalleExpedienteBean.expediente.fechaCreacion}</p>
+                    <p><span class="muted-text">Actualizado:</span> #{detalleExpedienteBean.expediente.fechaActualizacion}</p>
+                </div>
+            </h:panelGroup>
+
+            <h:panelGroup rendered="#{empty detalleExpedienteBean.expediente}">
+                <div class="empty-state">
+                    <h2>No se encontró el expediente</h2>
+                    <p>Verifica que el identificador sea correcto y vuelve a intentarlo.</p>
+                </div>
+            </h:panelGroup>
+        </section>
+    </div>
+</h:body>
+
+</html>

@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+      xmlns:f="http://xmlns.jcp.org/jsf/core"
+      xmlns:p="http://primefaces.org/ui">
+
+<h:head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Nuevo expediente</title>
+    <h:outputStylesheet library="css" name="style.css"/>
+</h:head>
+
+<h:body>
+    <div class="app-shell">
+        <header class="hero-panel">
+            <div class="hero-copy">
+                <span class="eyebrow">Alta de expediente</span>
+                <h1>Crear nuevo expediente</h1>
+                <p>Alta rápida con una interfaz limpia y orientada a captura eficiente de datos.</p>
+            </div>
+            <div class="hero-actions">
+                <h:link outcome="list" value="Volver al listado" styleClass="btn-secondary"/>
+            </div>
+        </header>
+
+        <h:form id="formCrearExpediente" styleClass="dashboard-form">
+            <p:messages id="formMessages" autoUpdate="true" closable="true"/>
+
+            <section class="surface-panel">
+                <div class="form-grid">
+                    <div class="field-block">
+                        <label for="asunto">Asunto</label>
+                        <p:inputText id="asunto" value="#{crearExpedienteBean.asunto}" required="true"
+                                     requiredMessage="El asunto es obligatorio" styleClass="form-input"/>
+                    </div>
+
+                    <div class="field-block">
+                        <label for="tipo">Tipo</label>
+                        <p:inputText id="tipo" value="#{crearExpedienteBean.tipo}" styleClass="form-input"/>
+                    </div>
+
+                    <div class="field-block">
+                        <label for="procedimiento">Procedimiento</label>
+                        <p:inputText id="procedimiento" value="#{crearExpedienteBean.procedimiento}" styleClass="form-input"/>
+                    </div>
+
+                    <div class="field-block field-span-2">
+                        <label for="descripcion">Descripción</label>
+                        <p:inputTextarea id="descripcion" value="#{crearExpedienteBean.descripcion}" rows="6"
+                                         autoResize="false" styleClass="form-input"/>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <p:commandButton value="Guardar expediente" action="#{crearExpedienteBean.guardar}"
+                                     update="formMessages" styleClass="btn-primary"/>
+                    <p:commandButton value="Cancelar" action="#{crearExpedienteBean.cancelar}"
+                                     immediate="true" styleClass="btn-secondary"/>
+                </div>
+            </section>
+        </h:form>
+    </div>
+</h:body>
+
+</html>

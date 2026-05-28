@@ -1,0 +1,54 @@
+services:
+  oracle-db:
+    image: gvenzl/oracle-xe:21-slim
+    container_name: expedientes-oracle
+    environment:
+      ORACLE_PASSWORD: ${ORACLE_PASSWORD:-oracle}
+      APP_USER: eappusr
+      APP_USER_PASSWORD: ${DB_PASSWORD:-password}
+    ports:
+      - "1521:1521"
+    volumes:
+      - oracle-data:/opt/oracle/oradata
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - echo "select 1 from dual;" | sqlplus -s system/$${ORACLE_PASSWORD}@//localhost:1521/XE >/dev/null 2>&1
+      interval: 30s
+      timeout: 10s
+      retries: 20
+      start_period: 120s
+
+  expedientes-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: expedientes-app
+    depends_on:
+      oracle-db:
+        condition: service_healthy
+    environment:
+      DB_HOST: oracle-db
+      DB_SID: XE
+      DB_USER: eappusr
+      DB_PASSWORD: password
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
+      STORAGE_PATH: /opt/expedientes-system/storage
+      LOG_PATH: /var/log/expedientes
+      LDAP_HOST: ${LDAP_HOST:-localhost}
+      LDAP_BASE_DN: ${LDAP_BASE_DN:-dc=example,dc=com}
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      PORTAFIRMAS_URL: ${PORTAFIRMAS_URL:-http://localhost:9090}
+      PORTAFIRMAS_API_KEY: ${PORTAFIRMAS_API_KEY:-test-key}
+      JAVA_OPTS: ${JAVA_OPTS:--Xms256m -Xmx512m}
+    ports:
+      - "8080:8080"
+    volumes:
+      - expedientes-storage:/opt/expedientes-system/storage
+      - expedientes-logs:/var/log/expedientes
+
+volumes:
+  oracle-data:
+  expedientes-storage:
+  expedientes-logs:

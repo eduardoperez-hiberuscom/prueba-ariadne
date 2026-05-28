@@ -1,5 +1,6 @@
 package com.example.expedientes.controller;
 
+import com.example.expedientes.dto.AsignacionExpedienteDTO;
 import com.example.expedientes.dto.ExpedienteDTO;
 import com.example.expedientes.service.ExpedienteService;
 import lombok.extern.slf4j.Slf4j;
@@ -136,6 +137,73 @@ public class ExpedienteController {
         try {
             ExpedienteDTO dto = expedienteService.desasignarExpediente(id, principal.getName());
             return ResponseEntity.ok(dto);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    /**
+     * PUT /api/gestor/expedientes/{id}/asignacion
+     * Asignar o desasignar expediente a un usuario especifico.
+     */
+    @PutMapping("/{id}/asignacion")
+    public ResponseEntity<ExpedienteDTO> asignar(
+            @PathVariable Long id,
+            @RequestBody AsignacionExpedienteDTO dto,
+            Principal principal) {
+        log.info("PUT /expedientes/{}/asignacion - usuario actor: {} - usuario destino: {}",
+                id, principal.getName(), dto.getUsuarioId());
+
+        try {
+            ExpedienteDTO actualizado = expedienteService.asignarExpediente(id, dto.getUsuarioId(), principal.getName());
+            return ResponseEntity.ok(actualizado);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    /**
+     * PUT /api/gestor/expedientes/{id}/revision-administrativa/generar-resolucion
+     * Persistir correcciones y avanzar el expediente a la fase de generar resolucion.
+     */
+    @PutMapping("/{id}/revision-administrativa/generar-resolucion")
+    public ResponseEntity<ExpedienteDTO> completarRevisionAdministrativa(
+            @PathVariable Long id,
+            @RequestBody ExpedienteDTO dto,
+            Principal principal) {
+        log.info("PUT /expedientes/{}/revision-administrativa/generar-resolucion - usuario: {}",
+                id, principal.getName());
+
+        try {
+            ExpedienteDTO actualizado =
+                    expedienteService.completarRevisionAdministrativa(id, dto, principal.getName());
+            return ResponseEntity.ok(actualizado);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    /**
+     * PUT /api/gestor/expedientes/{id}/fase/anterior
+     * Retroceder el expediente a la fase inmediatamente anterior.
+     */
+    @PutMapping("/{id}/fase/anterior")
+    public ResponseEntity<ExpedienteDTO> retrocederFase(
+            @PathVariable Long id,
+            Principal principal) {
+        log.info("PUT /expedientes/{}/fase/anterior - usuario: {}", id, principal.getName());
+
+        try {
+            ExpedienteDTO actualizado = expedienteService.retrocederFase(id, principal.getName());
+            return ResponseEntity.ok(actualizado);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }

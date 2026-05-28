@@ -17,6 +17,9 @@ public class DocumentoDTO implements Serializable {
     private Integer version;
     private String estado;
     private String rutaArchivo;
+    private String contenido;
+    private String plantillaCodigo;
+    private String plantillaRespuestaCodigo;
     private Long tamanioBytes;
     private String idPortafirmas;
     private LocalDateTime fechaFirma;

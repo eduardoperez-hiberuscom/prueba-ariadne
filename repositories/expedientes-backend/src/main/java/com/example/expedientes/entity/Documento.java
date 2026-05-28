@@ -6,7 +6,7 @@ import lombok.*;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
@@ -47,6 +47,15 @@ public class Documento implements Serializable {
 
     @Column(nullable = false, length = 500)
     private String rutaArchivo;  // Filesystem path
+
+    @Lob
+    private String contenido;
+
+    @Column(length = 100)
+    private String plantillaCodigo;
+
+    @Column(length = 100)
+    private String plantillaRespuestaCodigo;
 
     private Long tamanioBytes;
 

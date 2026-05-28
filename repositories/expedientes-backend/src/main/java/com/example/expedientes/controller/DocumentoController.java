@@ -1,6 +1,8 @@
 package com.example.expedientes.controller;
 
 import com.example.expedientes.dto.DocumentoDTO;
+import com.example.expedientes.dto.GenerarResolucionRequestDTO;
+import com.example.expedientes.dto.PlantillaRespuestaDTO;
 import com.example.expedientes.service.GeneradorDocumentosService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -22,6 +25,45 @@ public class DocumentoController {
 
     @Autowired
     private GeneradorDocumentosService generadorDocumentosService;
+
+    @GetMapping("/plantillas/respuesta")
+    public ResponseEntity<List<PlantillaRespuestaDTO>> listarPlantillasRespuesta() {
+        return ResponseEntity.ok(generadorDocumentosService.listarPlantillasRespuesta());
+    }
+
+    @GetMapping("/resolucion")
+    public ResponseEntity<List<DocumentoDTO>> listarDocumentosResolucion(
+            @RequestParam Long expedienteId,
+            Principal principal) {
+        try {
+            return ResponseEntity.ok(generadorDocumentosService.listarDocumentosResolucion(expedienteId, principal.getName()));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @PostMapping("/resolucion")
+    public ResponseEntity<DocumentoDTO> generarResolucion(
+            @RequestParam Long expedienteId,
+            @RequestBody GenerarResolucionRequestDTO request,
+            Principal principal) {
+        try {
+            DocumentoDTO documento = generadorDocumentosService.generarResolucionDesdePlantilla(
+                    expedienteId,
+                    request.getPlantillaRespuestaId(),
+                    request.getContenidoRespuesta(),
+                    principal.getName());
+            return ResponseEntity.status(HttpStatus.CREATED).body(documento);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
 
     /**
      * POST /api/gestor/documentos

@@ -101,6 +101,7 @@ public class GeneradorDocumentosService {
 
         String contenidoDocumento = plantillaDocumento.getContenidoBase()
             .replace("{{RESPUESTA}}", respuesta)
+            .replace("{{TEXTO_RESPUESTA_RESOLUCION}}", respuesta)
             .replace("{{NUMERO_EXPEDIENTE}}", expediente.getNumeroExpediente())
             .replace("{{ASUNTO}}", Optional.ofNullable(expediente.getAsunto()).orElse(""))
             .replace("{{FECHA_GENERACION}}", LocalDateTime.now().toString());
@@ -138,6 +139,17 @@ public class GeneradorDocumentosService {
             .stream()
             .map(this::mapToDTO)
             .collect(Collectors.toList());
+    }
+
+    public long limpiarDocumentosResolucion(Long expedienteId, String usuarioUid) {
+        Expediente expediente = obtenerExpedienteAsignado(expedienteId, usuarioUid);
+        long eliminados = documentoRepository.deleteByExpedienteAndTipo(expediente, TIPO_DOCUMENTO_RESOLUCION);
+        auditLogger.log(
+            usuarioUid,
+            "LIMPIEZA_DOCUMENTOS_RESOLUCION",
+            "Documentos de resolucion eliminados: " + eliminados,
+            expediente.getId());
+        return eliminados;
     }
 
     /**

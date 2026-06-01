@@ -11,7 +11,6 @@ import {
 import { listExpedientes } from './api/client'
 import { DashboardPage } from './pages/DashboardPage'
 import { ExpedienteDetailPage } from './pages/ExpedienteDetailPage'
-import { NewExpedientePage } from './pages/NewExpedientePage'
 import type { AuthCredentials } from './types/api'
 
 const AUTH_STORAGE_KEY = 'expedientes.front.auth'
@@ -117,35 +116,29 @@ function App() {
 
   return (
     <BrowserRouter>
-      <div className="app-shell container-fluid py-3">
-        <header className="topbar reveal-up card border-0 shadow-sm mb-3 p-3">
-          <div className="brand-block">
-            <p className="overline">Ariadne</p>
-            <Link to="/" className="brand-link">
-              Tramitador Corporativo <span className="app-version">v{APP_VERSION}</span>
-            </Link>
-          </div>
+      <div className={`app-shell container-fluid py-3 ${isAuthenticated ? '' : 'login-shell'}`}>
+        {isAuthenticated ? (
+          <header className="topbar reveal-up card border-0 shadow-sm mb-3 p-3">
+            <div className="brand-block">
+              <p className="overline">Ariadne</p>
+              <Link to="/" className="brand-link">
+                Tramitador Corporativo <span className="app-version">v{APP_VERSION}</span>
+              </Link>
+            </div>
 
-          <nav className="main-nav nav nav-pills" aria-label="Navegacion principal">
-            {isAuthenticated ? (
+            <nav className="main-nav nav nav-pills" aria-label="Navegacion principal">
               <>
                 <NavLink to="/" end className="nav-link">
                   <i className="bi bi-grid me-1"></i>
                   Panel
                 </NavLink>
-                <NavLink to="/expedientes/nuevo" className="nav-link">
+                <NavLink to="/?nuevo=1" className="nav-link">
                   <i className="bi bi-plus-circle me-1"></i>
                   Nuevo expediente
                 </NavLink>
               </>
-            ) : (
-              <NavLink to="/login" className="nav-link">
-                Acceso
-              </NavLink>
-            )}
-          </nav>
+            </nav>
 
-          {isAuthenticated ? (
             <div className="topbar-auth">
               <p className="user-chip">
                 <i className="bi bi-person-circle me-1"></i>
@@ -156,8 +149,8 @@ function App() {
                 Cerrar sesion
               </button>
             </div>
-          ) : null}
-        </header>
+          </header>
+        ) : null}
 
         {authNotice ? <p className="notice reveal-up">{authNotice}</p> : null}
 
@@ -170,20 +163,25 @@ function App() {
                   <Navigate to="/" replace />
                 ) : (
                   <section className="login-layout container-fluid">
-                    <article className="panel login-card hero-panel card border-0 shadow-sm p-4">
-                      <p className="overline">Acceso seguro</p>
-                      <h1>Inicia sesion para usar Expedientes 360</h1>
-                      <p className="mb-0">
-                        El panel y las operaciones de alta quedan protegidos hasta
-                        validar credenciales contra la API.
+                    <article className="login-classic-card card border-0 shadow-sm">
+                      <div className="login-classic-brand">
+                        <span className="login-classic-logo-mark">ARIADNE</span>
+                        <span className="login-classic-logo-text">tramitador corporativo</span>
+                      </div>
+
+                      <p className="login-classic-subtitle">
+                        Acceso seguro al panel de gestion de expedientes.
                       </p>
 
-                      <form className="stack-form" onSubmit={onConnect}>
-                        <label>
-                          Usuario
+                      <form className="login-classic-form" onSubmit={onConnect}>
+                        <div className="login-classic-row">
+                          <label htmlFor="login-usuario">Usuario:</label>
                           <input
+                            id="login-usuario"
                             className="form-control"
                             aria-label="Usuario"
+                            placeholder="Introduce tu usuario"
+                            autoComplete="username"
                             value={draftAuth.username}
                             onChange={(event) =>
                               setDraftAuth((prev) => ({
@@ -191,16 +189,18 @@ function App() {
                                 username: event.target.value,
                               }))
                             }
-                            placeholder="admin"
                           />
-                        </label>
+                        </div>
 
-                        <label>
-                          Contrasena
+                        <div className="login-classic-row">
+                          <label htmlFor="login-clave">Clave:</label>
                           <input
+                            id="login-clave"
                             className="form-control"
                             aria-label="Contrasena"
                             type="password"
+                            placeholder="Introduce tu clave"
+                            autoComplete="current-password"
                             value={draftAuth.password}
                             onChange={(event) =>
                               setDraftAuth((prev) => ({
@@ -208,16 +208,17 @@ function App() {
                                 password: event.target.value,
                               }))
                             }
-                            placeholder="Tu clave"
                           />
-                        </label>
+                        </div>
 
-                        <button type="submit" className="btn btn-primary" disabled={isSigningIn}>
-                          {isSigningIn ? 'Validando...' : 'Entrar'}
-                        </button>
+                        <div className="login-classic-actions">
+                          <button type="submit" className="btn btn-aepd-orange btn-sm login-submit-btn" disabled={isSigningIn}>
+                            {isSigningIn ? 'Validando...' : 'Iniciar sesion'}
+                          </button>
+                        </div>
                       </form>
 
-                      {authError ? <p className="error-text">{authError}</p> : null}
+                      {authError ? <p className="error-text mt-2">{authError}</p> : null}
                     </article>
                   </section>
                 )
@@ -226,10 +227,6 @@ function App() {
 
             <Route path="/" element={<ProtectedRoute isAuthenticated={isAuthenticated} />}>
               <Route path="/" element={auth ? <DashboardPage auth={auth} /> : null} />
-              <Route
-                path="/expedientes/nuevo"
-                element={auth ? <NewExpedientePage auth={auth} /> : null}
-              />
               <Route
                 path="/expedientes/:id"
                 element={auth ? <ExpedienteDetailPage auth={auth} /> : null}

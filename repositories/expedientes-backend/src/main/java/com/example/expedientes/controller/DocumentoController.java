@@ -44,6 +44,20 @@ public class DocumentoController {
         }
     }
 
+    @DeleteMapping("/resolucion")
+    public ResponseEntity<Void> limpiarDocumentosResolucion(
+            @RequestParam Long expedienteId,
+            Principal principal) {
+        try {
+            generadorDocumentosService.limpiarDocumentosResolucion(expedienteId, principal.getName());
+            return ResponseEntity.noContent().build();
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     @PostMapping("/resolucion")
     public ResponseEntity<DocumentoDTO> generarResolucion(
             @RequestParam Long expedienteId,
@@ -53,7 +67,7 @@ public class DocumentoController {
             DocumentoDTO documento = generadorDocumentosService.generarResolucionDesdePlantilla(
                     expedienteId,
                     request.getPlantillaRespuestaId(),
-                    request.getContenidoRespuesta(),
+                    request.resolveTextoRespuestaResolucion(),
                     principal.getName());
             return ResponseEntity.status(HttpStatus.CREATED).body(documento);
         } catch (IllegalArgumentException e) {

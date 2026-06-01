@@ -5,6 +5,7 @@ import com.example.expedientes.dto.UsuarioDTO;
 import com.example.expedientes.entity.Expediente;
 import com.example.expedientes.entity.EventoHistorico;
 import com.example.expedientes.entity.Usuario;
+import com.example.expedientes.repository.DocumentoRepository;
 import com.example.expedientes.repository.ExpedienteRepository;
 import com.example.expedientes.repository.EventoHistoricoRepository;
 import com.example.expedientes.repository.UsuarioRepository;
@@ -38,6 +39,9 @@ public class ExpedienteService {
 
     @Autowired
     private UsuarioRepository usuarioRepository;
+
+    @Autowired
+    private DocumentoRepository documentoRepository;
 
     @Autowired
     private AuditLogger auditLogger;
@@ -249,6 +253,89 @@ public class ExpedienteService {
         Expediente saved = expedienteRepository.save(expediente);
         auditLogger.log(usuarioUid, "RETROCESO_FASE_EXPEDIENTE",
                 "Expediente retrocedido a fase " + faseAnterior + ": " + saved.getNumeroExpediente(),
+                saved.getId());
+
+        return mapToDTO(saved);
+    }
+
+    public ExpedienteDTO avanzarAEsperaPortafirmas(Long expedienteId, String usuarioUid) {
+        Expediente expediente = obtenerExpedienteAsignadoAlUsuario(expedienteId, usuarioUid);
+
+        if (!FASE_GENERAR_RESOLUCION.equals(expediente.getFase())) {
+            throw new IllegalStateException("El expediente no esta en fase de generar resolucion");
+        }
+
+        boolean hayDocumentosResolucion = !documentoRepository
+                .findByExpedienteAndTipoOrderByVersionDocDesc(expediente, "RESOLUCION_TRAMITACION_CONJUNTA")
+                .isEmpty();
+
+        if (!hayDocumentosResolucion) {
+            throw new IllegalStateException("Debe existir al menos un documento de resolucion generado");
+        }
+
+        expediente.setFase(FASE_ESPERA_PORTAFIRMAS);
+        expediente.setEstado(resolveEstadoPorFase(FASE_ESPERA_PORTAFIRMAS));
+        expediente.setFechaActualizacion(LocalDateTime.now());
+
+        Expediente saved = expedienteRepository.save(expediente);
+        auditLogger.log(
+                usuarioUid,
+                "AVANCE_FASE_EXPEDIENTE",
+                "Expediente avanzado a fase " + FASE_ESPERA_PORTAFIRMAS + ": " + saved.getNumeroExpediente(),
+                saved.getId());
+
+        return mapToDTO(saved);
+    }
+
+    public ExpedienteDTO aprobarVistoBueno(Long expedienteId, String usuarioUid) {
+        Expediente expediente = obtenerExpedienteAsignadoAlUsuario(expedienteId, usuarioUid);
+
+        if (!FASE_ESPERA_PORTAFIRMAS.equals(expediente.getFase())) {
+            throw new IllegalStateException("El expediente no esta en fase de visto bueno");
+        }
+
+        int currentIndex = FASES_FLUJO.indexOf(expediente.getFase());
+        if (currentIndex < 0 || currentIndex >= FASES_FLUJO.size() - 1) {
+            throw new IllegalStateException("La fase actual no permite avance");
+        }
+
+        String siguienteFase = FASES_FLUJO.get(currentIndex + 1);
+        expediente.setFase(siguienteFase);
+        expediente.setEstado(resolveEstadoPorFase(siguienteFase));
+        expediente.setFechaActualizacion(LocalDateTime.now());
+
+        Expediente saved = expedienteRepository.save(expediente);
+        auditLogger.log(
+                usuarioUid,
+                "APROBACION_VISTO_BUENO_EXPEDIENTE",
+                "Expediente aprobado en visto bueno y avanzado a fase " + siguienteFase + ": " + saved.getNumeroExpediente(),
+                saved.getId());
+
+        return mapToDTO(saved);
+    }
+
+    public ExpedienteDTO rechazarVistoBueno(Long expedienteId, String usuarioUid) {
+        Expediente expediente = obtenerExpedienteAsignadoAlUsuario(expedienteId, usuarioUid);
+
+        if (!FASE_ESPERA_PORTAFIRMAS.equals(expediente.getFase())) {
+            throw new IllegalStateException("El expediente no esta en fase de visto bueno");
+        }
+
+        List<com.example.expedientes.entity.Documento> documentosAsociados = documentoRepository.findByExpediente(expediente);
+        if (!documentosAsociados.isEmpty()) {
+            documentoRepository.deleteAll(documentosAsociados);
+        }
+
+        expediente.setFase(FASE_REVISION_ADMINISTRATIVA);
+        expediente.setEstado(resolveEstadoPorFase(FASE_REVISION_ADMINISTRATIVA));
+        expediente.setFechaActualizacion(LocalDateTime.now());
+
+        Expediente saved = expedienteRepository.save(expediente);
+        auditLogger.log(
+                usuarioUid,
+                "RECHAZO_VISTO_BUENO_EXPEDIENTE",
+                "Expediente rechazado en visto bueno y devuelto a revision administrativa. Documentos eliminados: "
+                        + documentosAsociados.size() + ": " + saved.getNumeroExpediente(),
                 saved.getId());
 
         return mapToDTO(saved);

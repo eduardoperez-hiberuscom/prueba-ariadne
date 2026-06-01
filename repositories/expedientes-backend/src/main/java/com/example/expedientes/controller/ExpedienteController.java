@@ -210,6 +210,66 @@ public class ExpedienteController {
     }
 
     /**
+     * PUT /api/gestor/expedientes/{id}/fase/espera-portafirmas
+     * Avanzar el expediente desde GENERAR_RESOLUCION a ESPERA_PORTAFIRMAS.
+     */
+    @PutMapping("/{id}/fase/espera-portafirmas")
+    public ResponseEntity<ExpedienteDTO> avanzarAEsperaPortafirmas(
+            @PathVariable Long id,
+            Principal principal) {
+        log.info("PUT /expedientes/{}/fase/espera-portafirmas - usuario: {}", id, principal.getName());
+
+        try {
+            ExpedienteDTO actualizado = expedienteService.avanzarAEsperaPortafirmas(id, principal.getName());
+            return ResponseEntity.ok(actualizado);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    /**
+     * PUT /api/gestor/expedientes/{id}/fase/visto-bueno/aprobar
+     * Aprobar el expediente en fase de Visto Bueno y avanzar a la siguiente fase.
+     */
+    @PutMapping("/{id}/fase/visto-bueno/aprobar")
+    public ResponseEntity<ExpedienteDTO> aprobarVistoBueno(
+            @PathVariable Long id,
+            Principal principal) {
+        log.info("PUT /expedientes/{}/fase/visto-bueno/aprobar - usuario: {}", id, principal.getName());
+
+        try {
+            ExpedienteDTO actualizado = expedienteService.aprobarVistoBueno(id, principal.getName());
+            return ResponseEntity.ok(actualizado);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    /**
+     * PUT /api/gestor/expedientes/{id}/fase/visto-bueno/rechazar
+     * Rechazar el expediente en fase de Visto Bueno, volver a revision administrativa y eliminar documentos.
+     */
+    @PutMapping("/{id}/fase/visto-bueno/rechazar")
+    public ResponseEntity<ExpedienteDTO> rechazarVistoBueno(
+            @PathVariable Long id,
+            Principal principal) {
+        log.info("PUT /expedientes/{}/fase/visto-bueno/rechazar - usuario: {}", id, principal.getName());
+
+        try {
+            ExpedienteDTO actualizado = expedienteService.rechazarVistoBueno(id, principal.getName());
+            return ResponseEntity.ok(actualizado);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    /**
      * GET /api/gestor/expedientes/numero/{numero}
      * Buscar por número de expediente
      */

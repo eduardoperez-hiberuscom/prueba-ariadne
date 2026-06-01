@@ -13,4 +13,5 @@ public interface DocumentoRepository extends JpaRepository<Documento, Long> {
     List<Documento> findByExpedienteAndTipoOrderByVersionDocDesc(Expediente expediente, String tipo);
     Optional<Documento> findByIdPortafirmas(String idPortafirmas);
     Optional<Documento> findTopByExpedienteAndTipoOrderByVersionDocDesc(Expediente expediente, String tipo);
+    long deleteByExpedienteAndTipo(Expediente expediente, String tipo);
 }

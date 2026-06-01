@@ -3,9 +3,13 @@ import type {
   AuthCredentials,
   Documento,
   Expediente,
+  GenerarResolucionPayload,
   GenerateDocumentoPayload,
   NewExpedientePayload,
   PageResult,
+  PlantillaRespuesta,
+  ReviewAdministrativaPayload,
+  Usuario,
 } from '../types/api'
 
 const api = axios.create({
@@ -134,6 +138,147 @@ export async function unassignExpedienteFromMe(
   )
 
   return response.data
+}
+
+export async function listUsuarios(auth: AuthCredentials): Promise<Usuario[]> {
+  const response = await api.get<Usuario[]>('/gestor/usuarios', withAuth(auth))
+  return response.data
+}
+
+export async function assignExpedienteToUser(
+  auth: AuthCredentials,
+  expedienteId: number,
+  usuarioId: number | null,
+): Promise<Expediente> {
+  const response = await api.put<Expediente>(
+    `/gestor/expedientes/${expedienteId}/asignacion`,
+    { usuarioId },
+    withAuth(auth),
+  )
+
+  return response.data
+}
+
+export async function completeAdministrativeReview(
+  auth: AuthCredentials,
+  expedienteId: number,
+  payload: ReviewAdministrativaPayload,
+): Promise<Expediente> {
+  const response = await api.put<Expediente>(
+    `/gestor/expedientes/${expedienteId}/revision-administrativa/generar-resolucion`,
+    payload,
+    withAuth(auth),
+  )
+
+  return response.data
+}
+
+export async function rollbackExpedientePhase(
+  auth: AuthCredentials,
+  expedienteId: number,
+): Promise<Expediente> {
+  const response = await api.put<Expediente>(
+    `/gestor/expedientes/${expedienteId}/fase/anterior`,
+    {},
+    withAuth(auth),
+  )
+
+  return response.data
+}
+
+export async function advanceExpedienteToEsperaPortafirmas(
+  auth: AuthCredentials,
+  expedienteId: number,
+): Promise<Expediente> {
+  const response = await api.put<Expediente>(
+    `/gestor/expedientes/${expedienteId}/fase/espera-portafirmas`,
+    {},
+    withAuth(auth),
+  )
+
+  return response.data
+}
+
+export async function approveExpedienteVistoBueno(
+  auth: AuthCredentials,
+  expedienteId: number,
+): Promise<Expediente> {
+  const response = await api.put<Expediente>(
+    `/gestor/expedientes/${expedienteId}/fase/visto-bueno/aprobar`,
+    {},
+    withAuth(auth),
+  )
+
+  return response.data
+}
+
+export async function rejectExpedienteVistoBueno(
+  auth: AuthCredentials,
+  expedienteId: number,
+): Promise<Expediente> {
+  const response = await api.put<Expediente>(
+    `/gestor/expedientes/${expedienteId}/fase/visto-bueno/rechazar`,
+    {},
+    withAuth(auth),
+  )
+
+  return response.data
+}
+
+export async function listPlantillasRespuesta(
+  auth: AuthCredentials,
+): Promise<PlantillaRespuesta[]> {
+  const response = await api.get<PlantillaRespuesta[]>(
+    '/gestor/documentos/plantillas/respuesta',
+    withAuth(auth),
+  )
+
+  return response.data
+}
+
+export async function generateResolutionDocument(
+  auth: AuthCredentials,
+  expedienteId: number,
+  payload: GenerarResolucionPayload,
+): Promise<Documento> {
+  const response = await api.post<Documento>(
+    '/gestor/documentos/resolucion',
+    payload,
+    {
+      ...withAuth(auth),
+      params: {
+        expedienteId,
+      },
+    },
+  )
+
+  return response.data
+}
+
+export async function listResolutionDocuments(
+  auth: AuthCredentials,
+  expedienteId: number,
+): Promise<Documento[]> {
+  const response = await api.get<Documento[]>('/gestor/documentos/resolucion', {
+    ...withAuth(auth),
+    params: {
+      expedienteId,
+    },
+  })
+
+  return response.data
+}
+
+export async function clearResolutionDocuments(
+  auth: AuthCredentials,
+  expedienteId: number,
+): Promise<void> {
+  await api.delete('/gestor/documentos/resolucion', {
+    ...withAuth(auth),
+    params: {
+      expedienteId,
+    },
+  })
 }
 
 export async function generateDocumento(

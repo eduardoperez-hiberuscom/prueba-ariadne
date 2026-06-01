@@ -4,6 +4,9 @@ import com.example.expedientes.dto.ExpedienteDTO;
 import com.example.expedientes.entity.Expediente;
 import com.example.expedientes.entity.EstadoExpediente;
 import com.example.expedientes.repository.ExpedienteRepository;
+import com.example.expedientes.repository.UsuarioRepository;
+import com.example.expedientes.repository.EventoHistoricoRepository;
+import com.example.expedientes.service.AuditLogger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,6 +30,15 @@ class ExpedienteServiceTest {
 
     @Mock
     private ExpedienteRepository expedienteRepository;
+
+    @Mock
+    private UsuarioRepository usuarioRepository;
+
+    @Mock
+    private EventoHistoricoRepository historicoRepository;
+
+    @Mock
+    private AuditLogger auditLogger;
 
     @InjectMocks
     private ExpedienteService expedienteService;

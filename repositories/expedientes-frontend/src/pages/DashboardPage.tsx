@@ -1,7 +1,17 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { getExpedienteByNumero, listExpedientes } from '../api/client'
-import type { AuthCredentials, Expediente, PageResult } from '../types/api'
+import { useSearchParams } from 'react-router-dom'
+import {
+  assignExpedienteToUser,
+  assignExpedienteToMe,
+  listExpedientes,
+  listMyAssignedExpedientes,
+  listUnassignedExpedientes,
+  listUsuarios,
+  rollbackExpedientePhase,
+} from '../api/client'
+import { NewExpedientePage } from './NewExpedientePage'
+import type { AuthCredentials, Expediente, PageResult, Usuario } from '../types/api'
 
 interface DashboardPageProps {
   auth: AuthCredentials
@@ -19,159 +29,825 @@ function formatDate(dateTime: string | undefined): string {
   }).format(parsed)
 }
 
+function formatWorkflowLabel(value: string | undefined): string {
+  if (!value) {
+    return '-'
+  }
+
+  return value
+    .toLowerCase()
+    .split('_')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ')
+}
+
 export function DashboardPage({ auth }: DashboardPageProps) {
-  const [pageData, setPageData] = useState<PageResult<Expediente> | null>(null)
-  const [page, setPage] = useState(0)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const initialTabParam = searchParams.get('tab')
+  const openCreateParam = searchParams.get('nuevo')
+  const initialTab: 'assigned' | 'search' | 'unassigned' =
+    initialTabParam === 'search' || initialTabParam === 'unassigned'
+      ? initialTabParam
+      : 'assigned'
+
+  const [allPageData, setAllPageData] = useState<PageResult<Expediente> | null>(null)
+  const [assignedPageData, setAssignedPageData] = useState<PageResult<Expediente> | null>(null)
+  const [unassignedPageData, setUnassignedPageData] = useState<PageResult<Expediente> | null>(null)
+  const [allPage, setAllPage] = useState(0)
+  const [assignedPage, setAssignedPage] = useState(0)
+  const [unassignedPage, setUnassignedPage] = useState(0)
+  const [activeTab, setActiveTab] = useState<'assigned' | 'search' | 'unassigned'>(initialTab)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
-  const [searchNumero, setSearchNumero] = useState('')
-  const [searchResult, setSearchResult] = useState<Expediente | null>(null)
+  const [actionMessage, setActionMessage] = useState('')
+  const [usuarios, setUsuarios] = useState<Usuario[]>([])
+  const [assignmentTarget, setAssignmentTarget] = useState<Expediente | null>(null)
+  const [assignmentQuery, setAssignmentQuery] = useState('')
+  const [selectedUsuarioId, setSelectedUsuarioId] = useState<string>('')
+  const [draftFilters, setDraftFilters] = useState({
+    query: '',
+    fecha: '',
+    fase: '',
+    estado: '',
+  })
+  const [filters, setFilters] = useState(draftFilters)
+  const [createDialogOpen, setCreateDialogOpen] = useState(false)
+  const [selectedExpedienteId, setSelectedExpedienteId] = useState<number | null>(null)
+  const [autoSelectedExpedienteId, setAutoSelectedExpedienteId] = useState<number | null>(null)
 
   useEffect(() => {
-    void listExpedientes(auth, page)
-      .then((result) => {
-        setPageData(result)
+    if (openCreateParam !== '1') {
+      return
+    }
+
+    setCreateDialogOpen(true)
+
+    const nextParams = new URLSearchParams(searchParams)
+    nextParams.delete('nuevo')
+    setSearchParams(nextParams, { replace: true })
+  }, [openCreateParam, searchParams, setSearchParams])
+
+  useEffect(() => {
+    if (autoSelectedExpedienteId === null) {
+      return
+    }
+
+    const highlightedId = autoSelectedExpedienteId
+    const timer = window.setTimeout(() => {
+      setSelectedExpedienteId((previous) => (previous === highlightedId ? null : previous))
+      setAutoSelectedExpedienteId(null)
+    }, 3000)
+
+    return () => {
+      window.clearTimeout(timer)
+    }
+  }, [autoSelectedExpedienteId])
+
+  useEffect(() => {
+    if (!actionMessage) {
+      return
+    }
+
+    const timer = window.setTimeout(() => {
+      setActionMessage('')
+    }, 2000)
+
+    return () => {
+      window.clearTimeout(timer)
+    }
+  }, [actionMessage])
+
+  useEffect(() => {
+    if (!error) {
+      return
+    }
+
+    const timer = window.setTimeout(() => {
+      setError('')
+    }, 4000)
+
+    return () => {
+      window.clearTimeout(timer)
+    }
+  }, [error])
+
+  const sourceData =
+    activeTab === 'assigned'
+      ? assignedPageData?.content ?? []
+      : activeTab === 'unassigned'
+        ? unassignedPageData?.content ?? []
+        : allPageData?.content ?? []
+
+  const filteredData = useMemo(() => {
+    return sourceData.filter((expediente) => {
+      const query = filters.query.trim().toLowerCase()
+      const matchesQuery =
+        !query ||
+        expediente.numeroExpediente.toLowerCase().includes(query)
+
+      const dateValue = expediente.fechaCreacion?.slice(0, 10) ?? ''
+      const matchesFecha = !filters.fecha || dateValue === filters.fecha
+
+      const matchesFase =
+        !filters.fase ||
+        (expediente.fase ?? '').toLowerCase() === filters.fase.toLowerCase()
+
+      const matchesEstado =
+        !filters.estado ||
+        (expediente.estado ?? '').toLowerCase() === filters.estado.toLowerCase()
+
+      return matchesQuery && matchesFecha && matchesFase && matchesEstado
+    })
+  }, [sourceData, filters])
+
+  const faseOptions = useMemo(() => {
+    return Array.from(new Set(sourceData.map((item) => item.fase).filter(Boolean))).sort(
+      (a, b) => a.localeCompare(b),
+    )
+  }, [sourceData])
+
+  const estadoOptions = useMemo(() => {
+    return Array.from(new Set(sourceData.map((item) => item.estado).filter(Boolean))).sort(
+      (a, b) => a.localeCompare(b),
+    )
+  }, [sourceData])
+
+  const currentPageData =
+    activeTab === 'assigned'
+      ? assignedPageData
+      : activeTab === 'unassigned'
+        ? unassignedPageData
+        : allPageData
+
+  const filteredUsuarios = useMemo(() => {
+    const normalizedQuery = assignmentQuery.trim().toLowerCase()
+    if (!normalizedQuery) {
+      return usuarios
+    }
+
+    return usuarios.filter((usuario) => {
+      return (
+        usuario.nombre.toLowerCase().includes(normalizedQuery) ||
+        usuario.uid.toLowerCase().includes(normalizedQuery) ||
+        usuario.email.toLowerCase().includes(normalizedQuery)
+      )
+    })
+  }, [assignmentQuery, usuarios])
+
+  const fetchAssigned = () =>
+    listMyAssignedExpedientes(auth, assignedPage).then((result) => {
+      setAssignedPageData(result)
+    })
+
+  const fetchUnassigned = () =>
+    listUnassignedExpedientes(auth, unassignedPage).then((result) => {
+      setUnassignedPageData(result)
+    })
+
+  const fetchAll = () =>
+    listExpedientes(auth, allPage, 10).then((result) => {
+      setAllPageData(result)
+    })
+
+  useEffect(() => {
+    setIsLoading(true)
+    void Promise.all([fetchAssigned(), fetchUnassigned(), fetchAll(), listUsuarios(auth)])
+      .then(([, , , usuariosResponse]) => {
+        setUsuarios(usuariosResponse)
         setError('')
       })
       .catch(() => {
-        setError('No se pudo cargar el listado. Revisa credenciales o backend.')
+        setError('No se pudieron cargar las bandejas. Revisa credenciales o backend.')
       })
       .finally(() => {
         setIsLoading(false)
       })
-  }, [auth, page])
+  }, [auth, assignedPage, unassignedPage, allPage])
 
-  const statusSummary = useMemo(() => {
-    const entries = pageData?.content ?? []
-    const summary = new Map<string, number>()
-    entries.forEach((item) => {
-      summary.set(item.estado, (summary.get(item.estado) ?? 0) + 1)
+  const refreshBandejas = () =>
+    Promise.all([fetchAssigned(), fetchUnassigned(), fetchAll()]).then(() => {
+      setError('')
     })
-    return summary
-  }, [pageData])
 
-  const onSearch = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setSearchResult(null)
+  const openAssignmentPicker = (expediente: Expediente) => {
+    setAssignmentTarget(expediente)
+    setAssignmentQuery('')
+    setSelectedUsuarioId(expediente.asignadoAId ? String(expediente.asignadoAId) : '')
+    setActionMessage('')
     setError('')
+  }
 
-    if (!searchNumero.trim()) {
-      return
-    }
+  const closeAssignmentPicker = () => {
+    setAssignmentTarget(null)
+    setAssignmentQuery('')
+    setSelectedUsuarioId('')
+  }
 
+  const onAssignToMe = (expediente: Expediente) => {
+    setActionMessage('')
+    setError('')
     setIsLoading(true)
-    void getExpedienteByNumero(auth, searchNumero.trim())
-      .then((result) => {
-        setSearchResult(result)
+
+    void assignExpedienteToMe(auth, expediente.id)
+      .then(() => refreshBandejas())
+      .then(() => {
+        setActionMessage(`Expediente ${expediente.numeroExpediente} asignado correctamente.`)
       })
       .catch(() => {
-        setError('No existe un expediente con ese numero.')
+        setError('No se pudo asignar el expediente.')
       })
       .finally(() => {
         setIsLoading(false)
       })
   }
 
-  return (
-    <section className="page-grid">
-      <article className="panel hero-panel">
-        <p className="overline">Panel operativo</p>
-        <h1>Centro de control de expedientes</h1>
-        <p>
-          Gestiona el ciclo administrativo completo: alta, seguimiento y emision
-          de documentos desde una sola interfaz.
-        </p>
-      </article>
+  const onSubmitAssignment = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
 
-      <article className="kpi-row">
-        <div className="panel kpi-card">
-          <h2>Total expedientes</h2>
-          <p className="kpi-value">{pageData?.totalElements ?? 0}</p>
-        </div>
-        <div className="panel kpi-card">
-          <h2>Estado INICIAL</h2>
-          <p className="kpi-value">{statusSummary.get('INICIAL') ?? 0}</p>
-        </div>
-        <div className="panel kpi-card">
-          <h2>Pagina actual</h2>
-          <p className="kpi-value">{(pageData?.number ?? 0) + 1}</p>
-        </div>
-      </article>
+    if (!assignmentTarget) {
+      return
+    }
 
-      <article className="panel">
-        <h2>Busqueda rapida por numero</h2>
-        <form className="inline-form" onSubmit={onSearch}>
-          <input
-            value={searchNumero}
-            onChange={(event) => setSearchNumero(event.target.value)}
-            placeholder="Ejemplo: 20260521-12345"
-          />
-          <button type="submit">Buscar</button>
-        </form>
+    setActionMessage('')
+    setError('')
+    setIsLoading(true)
 
-        {searchResult ? (
-          <p className="result-ok">
-            Encontrado: <strong>{searchResult.asunto}</strong>.
-            <Link to={`/expedientes/${searchResult.id}`}> Abrir detalle</Link>
-          </p>
-        ) : null}
-      </article>
+    const usuarioId = selectedUsuarioId ? Number(selectedUsuarioId) : null
 
-      <article className="panel">
-        <div className="list-header">
-          <h2>Expedientes recientes</h2>
-          <Link className="ghost-link" to="/expedientes/nuevo">
-            Crear nuevo
-          </Link>
-        </div>
+    void assignExpedienteToUser(auth, assignmentTarget.id, usuarioId)
+      .then(() => refreshBandejas())
+      .then(() => {
+        setActionMessage(
+          usuarioId === null
+            ? `Expediente ${assignmentTarget.numeroExpediente} desasignado correctamente.`
+            : `Expediente ${assignmentTarget.numeroExpediente} reasignado correctamente.`,
+        )
+        closeAssignmentPicker()
+      })
+      .catch(() => {
+        setError('No se pudo actualizar la asignacion del expediente.')
+      })
+      .finally(() => {
+        setIsLoading(false)
+      })
+  }
 
-        {isLoading ? <p>Cargando datos...</p> : null}
-        {error ? <p className="error-text">{error}</p> : null}
+  const onRollbackPhase = (expediente: Expediente) => {
+    setActionMessage('')
+    setError('')
+    setIsLoading(true)
 
-        <div className="exp-list">
-          {(pageData?.content ?? []).map((expediente) => (
+    void rollbackExpedientePhase(auth, expediente.id)
+      .then(() => refreshBandejas())
+      .then(() => {
+        setActionMessage(`Expediente ${expediente.numeroExpediente} retrocedido de fase correctamente.`)
+      })
+      .catch(() => {
+        setError('No se pudo retroceder la fase del expediente.')
+      })
+      .finally(() => {
+        setIsLoading(false)
+      })
+  }
+
+  const onSearch = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setFilters(draftFilters)
+  }
+
+  const onClearFilters = () => {
+    const clean = { query: '', fecha: '', fase: '', estado: '' }
+    setDraftFilters(clean)
+    setFilters(clean)
+  }
+
+  const onCreatedExpediente = (expediente: Expediente) => {
+    setCreateDialogOpen(false)
+    setActiveTab('assigned')
+    setSelectedExpedienteId(expediente.id)
+    setAutoSelectedExpedienteId(expediente.id)
+    setAssignedPage(0)
+    setUnassignedPage(0)
+    setAllPage(0)
+    setActionMessage(`Expediente ${expediente.numeroExpediente} creado y asignado a ${auth.username}.`)
+    setError('')
+    setIsLoading(true)
+
+    void Promise.all([
+      listMyAssignedExpedientes(auth, 0),
+      listUnassignedExpedientes(auth, 0),
+      listExpedientes(auth, 0, 10),
+    ])
+      .then(([assigned, unassigned, all]) => {
+        setAssignedPageData(assigned)
+        setUnassignedPageData(unassigned)
+        setAllPageData(all)
+      })
+      .catch(() => {
+        setError('El expediente se creo y asigno, pero no se pudieron refrescar las bandejas.')
+      })
+      .finally(() => {
+        setIsLoading(false)
+      })
+  }
+
+  const tabTitle =
+    activeTab === 'assigned'
+      ? 'Mis Expedientes'
+      : activeTab === 'unassigned'
+        ? 'Sin asignar'
+        : 'Busqueda de Expedientes'
+
+  const tabDescription =
+    activeTab === 'assigned'
+      ? 'Expedientes actualmente asignados a tu usuario.'
+      : activeTab === 'unassigned'
+        ? 'Expedientes pendientes de asignacion.'
+        : 'Vista general para busqueda y revision cruzada.'
+
+  const renderActionButtons = (expediente: Expediente) => {
+    if (activeTab === 'assigned') {
+      const canTramitar =
+        expediente.fase === 'REVISION_ADMINISTRATIVA' ||
+        expediente.fase === 'GENERAR_RESOLUCION' ||
+        expediente.fase === 'ESPERA_PORTAFIRMAS'
+
+      return (
+        <div className="table-actions table-actions-compact">
+          {canTramitar ? (
             <Link
-              key={expediente.id}
-              className="exp-card"
-              to={`/expedientes/${expediente.id}`}
+              className="btn btn-outline-success btn-sm icon-action-btn"
+              to={`/expedientes/${expediente.id}?mode=tramitar`}
+              title="Tramitar"
+              aria-label={`Tramitar expediente ${expediente.numeroExpediente}`}
             >
-              <p className="overline">{expediente.numeroExpediente}</p>
-              <h3>{expediente.asunto}</h3>
-              <p>{expediente.descripcion || 'Sin descripcion'}</p>
-              <div className="card-meta">
-                <span className="pill">{expediente.estado}</span>
-                <span>{formatDate(expediente.fechaCreacion)}</span>
-              </div>
+              <i className="bi bi-play-fill"></i>
             </Link>
-          ))}
-        </div>
-
-        <div className="pager">
+          ) : null}
           <button
             type="button"
-            onClick={() => {
-              setIsLoading(true)
-              setPage((prev) => Math.max(prev - 1, 0))
-            }}
-            disabled={Boolean(pageData?.first)}
+            className="btn btn-outline-danger btn-sm icon-action-btn"
+            onClick={() => onRollbackPhase(expediente)}
+            title={
+              expediente.fase === 'REVISION_ADMINISTRATIVA'
+                ? 'No se puede retroceder mas'
+                : 'Retroceder fase'
+            }
+            aria-label={`Retroceder fase del expediente ${expediente.numeroExpediente}`}
+            disabled={expediente.fase === 'REVISION_ADMINISTRATIVA'}
           >
+            <i className="bi bi-arrow-counterclockwise"></i>
+          </button>
+          <button
+            type="button"
+            className="btn btn-outline-aepd-orange btn-sm icon-action-btn"
+            onClick={() => openAssignmentPicker(expediente)}
+            title="Cambiar asignacion"
+            aria-label={`Cambiar asignacion del expediente ${expediente.numeroExpediente}`}
+          >
+            <i className="bi bi-person-gear"></i>
+          </button>
+          <Link
+            className="btn btn-outline-primary btn-sm icon-action-btn"
+            to={`/expedientes/${expediente.id}`}
+            title="Ver expediente"
+            aria-label={`Ver expediente ${expediente.numeroExpediente}`}
+          >
+            <i className="bi bi-eye"></i>
+          </Link>
+        </div>
+      )
+    }
+
+    if (activeTab === 'unassigned') {
+      return (
+        <button type="button" className="btn btn-outline-success btn-sm action-btn-main" onClick={() => onAssignToMe(expediente)}>
+          Asignarmelo
+        </button>
+      )
+    }
+
+    return (
+      <button
+        type="button"
+        className="btn btn-outline-aepd-orange btn-sm d-inline-flex align-items-center justify-content-center gap-1 action-btn-main"
+        onClick={() => openAssignmentPicker(expediente)}
+      >
+        <i className="bi bi-person-gear"></i>
+        Asignar
+      </button>
+    )
+  }
+
+  return (
+    <section className="page-grid d-grid gap-3">
+      <article className="panel hero-panel card border-0 shadow-sm p-3 compact-overview">
+        <div>
+          <p className="overline">Expedientes</p>
+          <h1>{tabTitle}</h1>
+          <p className="text-secondary mb-0 d-flex align-items-center gap-2">
+            <i className="bi bi-stars"></i>
+            {tabDescription}
+          </p>
+        </div>
+
+        <div className="kpi-inline-group">
+          <article className="kpi-inline-item premium-kpi">
+            <p className="kpi-inline-label">
+              <i className="bi bi-person-check"></i>
+              Mis asignados
+            </p>
+            <p className="kpi-inline-value">{assignedPageData?.totalElements ?? 0}</p>
+          </article>
+          <article className="kpi-inline-item premium-kpi">
+            <p className="kpi-inline-label">
+              <i className="bi bi-inbox"></i>
+              Sin asignar
+            </p>
+            <p className="kpi-inline-value">{unassignedPageData?.totalElements ?? 0}</p>
+          </article>
+          <article className="kpi-inline-item premium-kpi">
+            <p className="kpi-inline-label">
+              <i className="bi bi-grid-3x3-gap"></i>
+              Total visibles
+            </p>
+            <p className="kpi-inline-value">
+              {(assignedPageData?.content?.length ?? 0) +
+                (unassignedPageData?.content?.length ?? 0)}
+            </p>
+          </article>
+        </div>
+      </article>
+
+      <article className="panel card border-0 shadow-sm p-3">
+        <div className="dashboard-toolbar mb-3">
+          <div className="tab-strip nav nav-tabs" role="tablist" aria-label="Bandejas de expedientes">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === 'assigned'}
+              className={activeTab === 'assigned' ? 'nav-link active' : 'nav-link'}
+              onClick={() => setActiveTab('assigned')}
+            >
+              <i className="bi bi-briefcase me-2"></i>
+              Mis Expedientes
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === 'search'}
+              className={activeTab === 'search' ? 'nav-link active' : 'nav-link'}
+              onClick={() => setActiveTab('search')}
+            >
+              <i className="bi bi-search me-2"></i>
+              Busqueda de Expedientes
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === 'unassigned'}
+              className={activeTab === 'unassigned' ? 'nav-link active' : 'nav-link'}
+              onClick={() => setActiveTab('unassigned')}
+            >
+              <i className="bi bi-inbox me-2"></i>
+              Sin asignar
+            </button>
+          </div>
+
+          <button
+            type="button"
+            className="btn btn-aepd-orange dashboard-toolbar-cta d-inline-flex align-items-center gap-2 px-3 py-2"
+            onClick={() => setCreateDialogOpen(true)}
+          >
+            <i className="bi bi-plus-lg"></i>
+            Nuevo expediente
+          </button>
+        </div>
+
+        <div className="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-2 mb-3">
+          <p className="text-secondary mb-0 d-flex align-items-center gap-2">
+            <i className="bi bi-lightning-charge"></i>
+            Acciones rapidas de la bandeja
+          </p>
+        </div>
+
+        <form className="search-grid" onSubmit={onSearch}>
+          <div className="search-cell search-cell-query">
+            <div className="input-group">
+              <span className="input-group-text bg-white">
+                <i className="bi bi-search"></i>
+              </span>
+              <input
+                className={draftFilters.query ? 'form-control' : 'form-control filter-placeholder'}
+                value={draftFilters.query}
+                onChange={(event) =>
+                  setDraftFilters((prev) => ({ ...prev, query: event.target.value }))
+                }
+                placeholder="Nº Expediente"
+              />
+            </div>
+          </div>
+
+          <div className="search-cell">
+            <div className="input-group">
+              <span className="input-group-text bg-white">
+                <i className="bi bi-calendar-event"></i>
+              </span>
+              <input
+                className={draftFilters.fecha ? 'form-control' : 'form-control filter-placeholder'}
+                type="date"
+                value={draftFilters.fecha}
+                onChange={(event) =>
+                  setDraftFilters((prev) => ({ ...prev, fecha: event.target.value }))
+                }
+              />
+            </div>
+          </div>
+
+          <div className="search-cell">
+            <div className="input-group">
+              <span className="input-group-text bg-white">
+                <i className="bi bi-diagram-3"></i>
+              </span>
+              <select
+                className={draftFilters.fase ? 'form-select' : 'form-select filter-placeholder'}
+                value={draftFilters.fase}
+                onChange={(event) =>
+                  setDraftFilters((prev) => ({ ...prev, fase: event.target.value }))
+                }
+              >
+                <option value="">Fase</option>
+                {faseOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="search-cell">
+            <div className="input-group">
+              <span className="input-group-text bg-white">
+                <i className="bi bi-flag"></i>
+              </span>
+              <select
+                className={draftFilters.estado ? 'form-select' : 'form-select filter-placeholder'}
+                value={draftFilters.estado}
+                onChange={(event) =>
+                  setDraftFilters((prev) => ({ ...prev, estado: event.target.value }))
+                }
+              >
+                <option value="">Estado</option>
+                {estadoOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="search-cell search-cell-action">
+            <button type="submit" className="btn btn-primary d-inline-flex align-items-center justify-content-center gap-1">
+              <i className="bi bi-search"></i>
+              Buscar
+            </button>
+          </div>
+          <div className="search-cell search-cell-action">
+            <button type="button" className="btn btn-outline-secondary d-inline-flex align-items-center justify-content-center gap-1" onClick={onClearFilters}>
+              <i className="bi bi-arrow-counterclockwise"></i>
+              Limpiar
+            </button>
+          </div>
+        </form>
+
+        <div className="list-header">
+          <h2>Se han encontrado {filteredData.length} expedientes</h2>
+        </div>
+
+        {isLoading ? <div className="alert alert-info py-2">Cargando datos...</div> : null}
+        {error ? <div className="alert alert-danger py-2">{error}</div> : null}
+        {actionMessage ? <div className="alert alert-success py-2">{actionMessage}</div> : null}
+
+        <div className="table-wrap table-responsive">
+          <table className="exp-table table table-striped table-hover align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Tipo Expediente</th>
+                <th>N expediente</th>
+                <th>Reg. Entrada</th>
+                <th>Fec. Registro</th>
+                <th>Fase</th>
+                <th>Usuario</th>
+                <th>Estado</th>
+                <th>Consulta</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredData.map((expediente) => (
+                <tr
+                  key={expediente.id}
+                  className={selectedExpedienteId === expediente.id ? 'is-selected' : ''}
+                  aria-selected={selectedExpedienteId === expediente.id}
+                  onClick={() => {
+                    setSelectedExpedienteId(expediente.id)
+                    setAutoSelectedExpedienteId(null)
+                  }}
+                >
+                  <td>{expediente.tipo}</td>
+                  <td>{expediente.numeroExpediente}</td>
+                  <td>{expediente.numeroExpediente}</td>
+                  <td>{formatDate(expediente.fechaCreacion)}</td>
+                  <td>{formatWorkflowLabel(expediente.fase)}</td>
+                  <td>{expediente.asignadoAId ? auth.username : 'Sin asignar'}</td>
+                  <td>
+                    <span className="badge text-bg-light border">{expediente.estado}</span>
+                  </td>
+                  <td>
+                    {activeTab === 'assigned' ? (
+                      renderActionButtons(expediente)
+                    ) : (
+                      <div className="table-actions">
+                        {renderActionButtons(expediente)}
+                        <Link className="btn btn-outline-primary btn-sm d-inline-flex align-items-center justify-content-center gap-1 action-btn-view" to={`/expedientes/${expediente.id}`}>
+                          <i className="bi bi-eye"></i>
+                          Ver
+                        </Link>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {!isLoading &&
+        filteredData.length === 0 ? (
+          <p>
+            {activeTab === 'assigned'
+              ? 'No tienes expedientes asignados en esta pagina.'
+              : activeTab === 'unassigned'
+                ? 'No hay expedientes sin asignar en esta pagina.'
+                : 'No hay expedientes que coincidan con la busqueda actual.'}
+          </p>
+        ) : null}
+
+        <div className="pager d-flex justify-content-between align-items-center gap-2">
+          <button
+            className="btn btn-outline-primary btn-sm"
+            type="button"
+            onClick={() => {
+              if (activeTab === 'assigned') {
+                setAssignedPage((prev) => Math.max(prev - 1, 0))
+                return
+              }
+
+              if (activeTab === 'search') {
+                setAllPage((prev) => Math.max(prev - 1, 0))
+                return
+              }
+
+              setUnassignedPage((prev) => Math.max(prev - 1, 0))
+            }}
+            disabled={Boolean(
+              activeTab === 'assigned'
+                ? assignedPageData?.first
+                : activeTab === 'search'
+                  ? allPageData?.first
+                  : unassignedPageData?.first,
+            )}
+          >
+            <i className="bi bi-chevron-left me-1"></i>
             Anterior
           </button>
           <span>
-            Pagina {(pageData?.number ?? 0) + 1} de {pageData?.totalPages ?? 1}
+            Pagina{' '}
+            {(currentPageData?.number ?? 0) + 1} de {currentPageData?.totalPages ?? 1}
           </span>
           <button
+            className="btn btn-outline-primary btn-sm"
             type="button"
             onClick={() => {
-              setIsLoading(true)
-              setPage((prev) => prev + 1)
+              if (activeTab === 'assigned') {
+                setAssignedPage((prev) => prev + 1)
+                return
+              }
+
+              if (activeTab === 'search') {
+                setAllPage((prev) => prev + 1)
+                return
+              }
+
+              setUnassignedPage((prev) => prev + 1)
             }}
-            disabled={Boolean(pageData?.last)}
+            disabled={Boolean(
+              activeTab === 'assigned'
+                ? assignedPageData?.last
+                : activeTab === 'search'
+                  ? allPageData?.last
+                  : unassignedPageData?.last,
+            )}
           >
             Siguiente
+            <i className="bi bi-chevron-right ms-1"></i>
           </button>
         </div>
       </article>
+
+      {assignmentTarget ? (
+        <div className="assignment-modal-backdrop" role="presentation" onClick={closeAssignmentPicker}>
+          <article
+            className="assignment-modal card border-0 shadow-lg"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="assignment-modal-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="assignment-modal-header">
+              <div>
+                <p className="overline">Asignacion</p>
+                <h2 id="assignment-modal-title">Cambiar usuario asignado</h2>
+                <p className="mb-0">{assignmentTarget.numeroExpediente}</p>
+              </div>
+              <button
+                type="button"
+                className="btn btn-outline-secondary btn-sm icon-action-btn"
+                onClick={closeAssignmentPicker}
+                aria-label="Cerrar selector de asignacion"
+              >
+                <i className="bi bi-x-lg"></i>
+              </button>
+            </div>
+
+            <form className="assignment-modal-body" onSubmit={onSubmitAssignment}>
+              <label>
+                Buscar usuario
+                <input
+                  className="form-control"
+                  value={assignmentQuery}
+                  onChange={(event) => setAssignmentQuery(event.target.value)}
+                  placeholder="Buscar por nombre, uid o email"
+                />
+              </label>
+
+              <div className="assignment-options" role="listbox" aria-label="Usuarios disponibles">
+                <label className="assignment-option">
+                  <input
+                    type="radio"
+                    name="usuarioAsignado"
+                    value=""
+                    checked={selectedUsuarioId === ''}
+                    onChange={() => setSelectedUsuarioId('')}
+                  />
+                  <span>
+                    <strong>Sin asignar</strong>
+                    <small>El expediente quedara sin usuario asignado.</small>
+                  </span>
+                </label>
+
+                {filteredUsuarios.map((usuario) => (
+                  <label key={usuario.id} className="assignment-option">
+                    <input
+                      type="radio"
+                      name="usuarioAsignado"
+                      value={usuario.id}
+                      checked={selectedUsuarioId === String(usuario.id)}
+                      onChange={() => setSelectedUsuarioId(String(usuario.id))}
+                    />
+                    <span>
+                      <strong>{usuario.nombre}</strong>
+                      <small>{usuario.uid} · {usuario.email}</small>
+                    </span>
+                  </label>
+                ))}
+
+                {filteredUsuarios.length === 0 ? (
+                  <p className="text-secondary mb-0">No hay usuarios que coincidan con la busqueda.</p>
+                ) : null}
+              </div>
+
+              <div className="assignment-modal-actions">
+                <button type="submit" className="btn btn-primary" disabled={isLoading}>
+                  Guardar asignacion
+                </button>
+                <button type="button" className="btn btn-outline-secondary" onClick={closeAssignmentPicker}>
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </article>
+        </div>
+      ) : null}
+
+      {createDialogOpen ? (
+        <NewExpedientePage
+          auth={auth}
+          onClose={() => setCreateDialogOpen(false)}
+          onCreated={onCreatedExpediente}
+        />
+      ) : null}
     </section>
   )
 }

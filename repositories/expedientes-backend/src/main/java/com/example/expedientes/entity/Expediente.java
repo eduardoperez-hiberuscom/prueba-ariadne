@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -41,6 +41,9 @@ public class Expediente implements Serializable {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private EstadoExpediente estado;  // INICIAL, EN_TRAMITACION, CERRADO, etc.
+
+    @Column(nullable = false, length = 100)
+    private String fase;
 
     @ManyToOne
     @JoinColumn(name = "interesado_id")

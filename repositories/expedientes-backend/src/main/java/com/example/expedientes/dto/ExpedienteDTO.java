@@ -16,6 +16,7 @@ public class ExpedienteDTO implements Serializable {
     private String asunto;
     private String tipo;
     private String estado;
+    private String fase;
     private String procedimiento;
     private String descripcion;
     private Long interesadoId;
